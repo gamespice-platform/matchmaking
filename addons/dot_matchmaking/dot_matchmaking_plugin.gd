@@ -10,7 +10,7 @@ const _ICON := "res://addons/dot_matchmaking/icon_placeholder.svg"
 
 const _TYPES := [
 	[
-		"DotMatchmaker",
+		"GSMatchmaker",
 		"Node",
 		"res://addons/dot_matchmaking/runtime/dot_matchmaker.gd",
 	],

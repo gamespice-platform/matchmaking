@@ -1,4 +1,4 @@
-class_name DotMmRatingStore
+class_name GSMmRatingStore
 extends RefCounted
 
 ## Where ratings live between matches. This base keeps them in memory; subclass to persist.
@@ -12,17 +12,17 @@ extends RefCounted
 ## [b]Synchronous on purpose.[/b] The matcher asks for a rating for every member of every
 ## ticket it is handed, inside a queue pass, and an await in the middle of that is a pass
 ## that can be interleaved with the next one. A store that has to go over a network keeps
-## a local copy it refreshes on its own schedule — [DotMmBackbone] does exactly that — and
+## a local copy it refreshes on its own schedule — [GSMmBackbone] does exactly that — and
 ## answers from it here.
 
 var _ratings: Dictionary = {}
 
 
 ## The rating, or a newcomer's if there is none. Never null, and always a copy.
-func fetch(player_id: String, playlist: StringName) -> DotMmRating:
-	var r: DotMmRating = _ratings.get(_key(player_id, playlist))
+func fetch(player_id: String, playlist: StringName) -> GSMmRating:
+	var r: GSMmRating = _ratings.get(_key(player_id, playlist))
 	if r == null:
-		return DotMmRating.new()
+		return GSMmRating.new()
 	return r.copy()
 
 
@@ -30,11 +30,11 @@ func has_rating(player_id: String, playlist: StringName) -> bool:
 	return _ratings.has(_key(player_id, playlist))
 
 
-func put(player_id: String, playlist: StringName, rating: DotMmRating) -> DotResult:
+func put(player_id: String, playlist: StringName, rating: GSMmRating) -> GSResult:
 	if player_id == "":
-		return DotResult.fail(DotError.CODE_INVALID, "a rating for nobody")
+		return GSResult.fail(GSError.CODE_INVALID, "a rating for nobody")
 	_ratings[_key(player_id, playlist)] = rating.copy()
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func count() -> int:
@@ -45,28 +45,28 @@ func count() -> int:
 func to_dict() -> Dictionary:
 	var out := {}
 	for k in _ratings:
-		out[k] = (_ratings[k] as DotMmRating).to_dict()
+		out[k] = (_ratings[k] as GSMmRating).to_dict()
 	return out
 
 
 ## Replaces the contents with what [method to_dict] wrote. Refuses the whole load on one
 ## bad entry, because a store that half-loaded is a store in which some people are
 ## newcomers again and nothing says which.
-func load_dict(d: Dictionary) -> DotResult:
+func load_dict(d: Dictionary) -> GSResult:
 	var next := {}
 	for k in d:
 		var key := str(k)
 		if not key.contains("|"):
-			return DotResult.fail(DotError.CODE_PARSE, "a rating key without a playlist", key)
+			return GSResult.fail(GSError.CODE_PARSE, "a rating key without a playlist", key)
 		var raw: Variant = d[k]
 		if not (raw is Dictionary):
-			return DotResult.fail(DotError.CODE_PARSE, "a rating entry that is not an object", key)
-		var parsed := DotMmRating.from_dict(raw as Dictionary)
+			return GSResult.fail(GSError.CODE_PARSE, "a rating entry that is not an object", key)
+		var parsed := GSMmRating.from_dict(raw as Dictionary)
 		if not parsed.ok:
 			return parsed.wrap("rating '%s'" % key)
 		next[key] = parsed.value
 	_ratings = next
-	return DotResult.success(next.size())
+	return GSResult.success(next.size())
 
 
 static func _key(player_id: String, playlist: StringName) -> String:

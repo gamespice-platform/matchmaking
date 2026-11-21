@@ -1,4 +1,4 @@
-class_name DotMmTicket
+class_name GSMmTicket
 extends RefCounted
 
 ## One entry in a queue: a person, or a party that must not be split.
@@ -18,7 +18,7 @@ var id: String = ""
 ## The playlist this ticket is waiting in.
 var playlist: StringName = &""
 
-## Everybody on it: [code]{id: String, rating: DotMmRating}[/code]. The first is who
+## Everybody on it: [code]{id: String, rating: GSMmRating}[/code]. The first is who
 ## queued, which for a party is its leader.
 var members: Array = []
 
@@ -35,9 +35,9 @@ var enqueued_at: float = 0.0
 var latencies: Dictionary = {}
 
 
-static func solo(p_id: String, p_playlist: StringName, rating: DotMmRating,
-		p_latencies: Dictionary, at: float) -> DotMmTicket:
-	var t := DotMmTicket.new()
+static func solo(p_id: String, p_playlist: StringName, rating: GSMmRating,
+		p_latencies: Dictionary, at: float) -> GSMmTicket:
+	var t := GSMmTicket.new()
 	t.id = p_id
 	t.playlist = p_playlist
 	t.members = [{"id": p_id, "rating": rating}]
@@ -50,8 +50,8 @@ static func solo(p_id: String, p_playlist: StringName, rating: DotMmRating,
 ## folded to the worst per region; a region any member did not report is dropped, since
 ## nothing says that person can reach it.
 static func party(p_id: String, p_playlist: StringName, p_members: Array,
-		member_latencies: Array, at: float, p_party_id: String = "") -> DotMmTicket:
-	var t := DotMmTicket.new()
+		member_latencies: Array, at: float, p_party_id: String = "") -> GSMmTicket:
+	var t := GSMmTicket.new()
 	t.id = p_id
 	t.playlist = p_playlist
 	t.members = p_members.duplicate()
@@ -98,14 +98,14 @@ func ratings() -> Array:
 	return out
 
 
-## The rating this ticket is matched as. See [member DotMmPlaylist.party_skill_blend].
+## The rating this ticket is matched as. See [member GSMmPlaylist.party_skill_blend].
 func matching_rating(blend: float, premade_bonus: float) -> float:
 	if members.is_empty():
-		return DotMmRating.DEFAULT_RATING
+		return GSMmRating.DEFAULT_RATING
 	var total := 0.0
 	var best := -INF
 	for r in ratings():
-		var rr: DotMmRating = r
+		var rr: GSMmRating = r
 		total += rr.rating
 		best = maxf(best, rr.rating)
 	var mean := total / members.size()
@@ -116,7 +116,7 @@ func matching_rating(blend: float, premade_bonus: float) -> float:
 func deviation() -> float:
 	var worst := 0.0
 	for r in ratings():
-		worst = maxf(worst, (r as DotMmRating).deviation)
+		worst = maxf(worst, (r as GSMmRating).deviation)
 	return worst
 
 
@@ -124,14 +124,14 @@ func waited(now: float) -> float:
 	return maxf(0.0, now - enqueued_at)
 
 
-func validate(pl: DotMmPlaylist) -> DotResult:
+func validate(pl: GSMmPlaylist) -> GSResult:
 	if id == "":
-		return DotResult.fail(DotError.CODE_INVALID, "a ticket with no id")
+		return GSResult.fail(GSError.CODE_INVALID, "a ticket with no id")
 	if members.is_empty():
-		return DotResult.fail(DotError.CODE_INVALID, "a ticket with nobody on it", id)
+		return GSResult.fail(GSError.CODE_INVALID, "a ticket with nobody on it", id)
 	if pl != null and members.size() > pl.party_limit():
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"This party is too big for %s." % pl.display_name,
 			"%d members, the queue takes up to %d" % [members.size(), pl.party_limit()]
 		)
@@ -140,19 +140,19 @@ func validate(pl: DotMmPlaylist) -> DotResult:
 		var d: Dictionary = m
 		var mid := str(d.get("id", ""))
 		if mid == "":
-			return DotResult.fail(DotError.CODE_INVALID, "a member with no id", id)
+			return GSResult.fail(GSError.CODE_INVALID, "a member with no id", id)
 		if seen.has(mid):
-			return DotResult.fail(DotError.CODE_CONFLICT, "one person twice on a ticket", mid)
+			return GSResult.fail(GSError.CODE_CONFLICT, "one person twice on a ticket", mid)
 		seen[mid] = true
-		if not (d.get("rating") is DotMmRating):
-			return DotResult.fail(DotError.CODE_INVALID, "a member with no rating", mid)
+		if not (d.get("rating") is GSMmRating):
+			return GSResult.fail(GSError.CODE_INVALID, "a member with no rating", mid)
 	if latencies.is_empty():
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"No region is reachable by everybody on this ticket.",
 			id
 		)
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 func describe() -> Dictionary:

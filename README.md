@@ -20,11 +20,11 @@ A single number treats a newcomer and a thousand-game veteran on the same number
 ## The queue
 
 ```gdscript
-var duel := DotMmPlaylist.of(&"duel", 2, 1)        # two sides of one
-var fives := DotMmPlaylist.of(&"ranked5", 2, 5)
+var duel := GSMmPlaylist.of(&"duel", 2, 1)        # two sides of one
+var fives := GSMmPlaylist.of(&"ranked5", 2, 5)
 fives.max_party_size = 3                            # no full five-stacks against strangers
 
-var mm := DotMatchmaker.new()
+var mm := GSMatchmaker.new()
 mm.playlists = [duel, fives]
 mm.allocator = my_servers                           # anything with allocate(match)
 add_child(mm)
@@ -48,7 +48,7 @@ A found match waits for everyone to accept. Someone who declines or does not ans
 
 ## Settings
 
-### Per queue (`DotMmPlaylist`)
+### Per queue (`GSMmPlaylist`)
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -70,7 +70,7 @@ A found match waits for everyone to accept. Someone who declines or does not ans
 | `accept_timeout_sec` | 20.0 | Seconds to accept a found match. 0 skips the step. |
 | `decline_cooldown_sec` | 60.0 | Seconds out of the queue after declining. |
 
-### Machinery (`DotMatchmakingConfig`)
+### Machinery (`GSMatchmakingConfig`)
 
 Layered like every GameSpice config: defaults, JSON or `matchmaking.yml`, `DOT_MM_*` environment, `--mm-*` command line.
 
@@ -86,7 +86,7 @@ Layered like every GameSpice config: defaults, JSON or `matchmaking.yml`, `DOT_M
 
 ## The website
 
-On TMC the website computes ratings, not the game server, because ratings decide who other people are made to play against. `DotMmBackbone` files the match result (sides, places, participation, leavers) and stores the ratings the website sends back. [docs/backbone-contract.md](docs/backbone-contract.md) lists the routes. Without them, and always on a self-hosted server, the matchmaker rates locally into a file.
+On TMC the website computes ratings, not the game server, because ratings decide who other people are made to play against. `GSMmBackbone` files the match result (sides, places, participation, leavers) and stores the ratings the website sends back. [docs/backbone-contract.md](docs/backbone-contract.md) lists the routes. Without them, and always on a self-hosted server, the matchmaker rates locally into a file.
 
 ## More
 

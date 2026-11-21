@@ -1,4 +1,4 @@
-class_name DotMmRating
+class_name GSMmRating
 extends RefCounted
 
 ## One person's skill in one queue: a rating, how sure we are of it, and how erratic they are.
@@ -41,13 +41,13 @@ var volatility: float = DEFAULT_VOLATILITY
 ## Rated matches played in this queue. Drives placement, never the maths.
 var games: int = 0
 
-## Unix seconds of the last rated match, 0 for never. What [method DotMmGlicko2.age] reads.
+## Unix seconds of the last rated match, 0 for never. What [method GSMmGlicko2.age] reads.
 var last_played: int = 0
 
 
 static func of(p_rating: float, p_deviation: float = DEFAULT_DEVIATION,
-		p_volatility: float = DEFAULT_VOLATILITY) -> DotMmRating:
-	var r := DotMmRating.new()
+		p_volatility: float = DEFAULT_VOLATILITY) -> GSMmRating:
+	var r := GSMmRating.new()
 	r.rating = p_rating
 	r.deviation = clampf(p_deviation, MIN_DEVIATION, MAX_DEVIATION)
 	r.volatility = p_volatility
@@ -69,8 +69,8 @@ func is_placing(placement_games: int) -> bool:
 	return games < placement_games
 
 
-func copy() -> DotMmRating:
-	var r := DotMmRating.of(rating, deviation, volatility)
+func copy() -> GSMmRating:
+	var r := GSMmRating.of(rating, deviation, volatility)
 	r.games = games
 	r.last_played = last_played
 	return r
@@ -90,8 +90,8 @@ func to_dict() -> Dictionary:
 ##
 ## A NaN rating is not a bad number, it is a contagious one: every opponent it is used
 ## against comes out NaN too, and a whole queue's ratings go with it inside an evening.
-static func from_dict(d: Dictionary) -> DotResult:
-	var r := DotMmRating.new()
+static func from_dict(d: Dictionary) -> GSResult:
+	var r := GSMmRating.new()
 	r.rating = float(d.get("rating", DEFAULT_RATING))
 	r.deviation = float(d.get("deviation", DEFAULT_DEVIATION))
 	r.volatility = float(d.get("volatility", DEFAULT_VOLATILITY))
@@ -101,14 +101,14 @@ static func from_dict(d: Dictionary) -> DotResult:
 	for v in [r.rating, r.deviation, r.volatility]:
 		var f := float(v)
 		if is_nan(f) or is_inf(f):
-			return DotResult.fail(DotError.CODE_INVALID, "a rating field is not a finite number", str(d))
+			return GSResult.fail(GSError.CODE_INVALID, "a rating field is not a finite number", str(d))
 	if r.volatility <= 0.0:
-		return DotResult.fail(DotError.CODE_INVALID, "volatility must be positive", str(d))
+		return GSResult.fail(GSError.CODE_INVALID, "volatility must be positive", str(d))
 	if r.games < 0:
-		return DotResult.fail(DotError.CODE_INVALID, "a negative number of games", str(d))
+		return GSResult.fail(GSError.CODE_INVALID, "a negative number of games", str(d))
 
 	r.deviation = clampf(r.deviation, MIN_DEVIATION, MAX_DEVIATION)
-	return DotResult.success(r)
+	return GSResult.success(r)
 
 
 func _to_string() -> String:

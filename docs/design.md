@@ -8,7 +8,7 @@ website-city's "matchmaking" is `PartySearch`: it finds a server for a party, lo
 
 ## The team extension shifts the opponent, not the player
 
-The obvious extension rates each player against the other side's mean alone, so a 2000 on a side of 1000s "should" beat a side of 1500s and drops the most when the side loses as it was always going to. `DotMmGlicko2.rate_match` rates each player against `other_mean - (own_mean - player)`: every player on a side sees the expectation the two means predict, and moves by their own deviation. The suite's second section measures it: about 6 points against the naive 20.
+The obvious extension rates each player against the other side's mean alone, so a 2000 on a side of 1000s "should" beat a side of 1500s and drops the most when the side loses as it was always going to. `GSMmGlicko2.rate_match` rates each player against `other_mean - (own_mean - player)`: every player on a side sees the expectation the two means predict, and moves by their own deviation. The suite's second section measures it: about 6 points against the naive 20.
 
 ## Per match, not per rating period
 
@@ -24,7 +24,7 @@ The anchor is always the longest-waiting ticket, which is the only order that ca
 
 ## Balancing places whole tickets
 
-`DotMmBalance` splits whole tickets (a solo player or a party) into sides: exhaustive for two sides up to the playlist's `exhaustive_limit` tickets (default 16, 0 = unlimited; the cost doubles per ticket, and past 63 tickets the mask cannot index them, so it logs an error and goes greedy), greedy plus swaps otherwise, and deterministic either way. `(mask & (1 << i)) == 0` is parenthesised deliberately: GDScript binds `&` tighter than `==` (`2 & 2 == 0` is `false`), the opposite of C, so the parentheses make the line read the same to somebody from either language.
+`GSMmBalance` splits whole tickets (a solo player or a party) into sides: exhaustive for two sides up to the playlist's `exhaustive_limit` tickets (default 16, 0 = unlimited; the cost doubles per ticket, and past 63 tickets the mask cannot index them, so it logs an error and goes greedy), greedy plus swaps otherwise, and deterministic either way. `(mask & (1 << i)) == 0` is parenthesised deliberately: GDScript binds `&` tighter than `==` (`2 & 2 == 0` is `false`), the opposite of C, so the parentheses make the line read the same to somebody from either language.
 
 ## The accept step keeps everybody's place
 
@@ -32,23 +32,23 @@ A decline or a timeout cools down only the person responsible and drops their ti
 
 ## Ratings come from the store, and the store is synchronous
 
-`DotMatchmaker.enqueue` takes ids. A client that could send its own rating could send any rating.
+`GSMatchmaker.enqueue` takes ids. A client that could send its own rating could send any rating.
 
-A queue pass asks for every member's rating; an `await` in the middle of that is a pass that can interleave with the next. A networked store keeps a local copy and refreshes it on its own schedule (`DotMmBackbone.refresh`). `DotMmRatingStoreFile` writes a temp file and renames it over the old one, so a process killed half way leaves the previous file whole.
+A queue pass asks for every member's rating; an `await` in the middle of that is a pass that can interleave with the next. A networked store keeps a local copy and refreshes it on its own schedule (`GSMmBackbone.refresh`). `GSMmRatingStoreFile` writes a temp file and renames it over the old one, so a process killed half way leaves the previous file whole.
 
 ## The site rates
 
-`DotMmBackbone.submit` sends the result, not numbers, and stores what comes back. The algorithm is duplicated on the site, as GameSpice Stats' merge rule is, and both sides test the same worked example (the suite's first section).
+`GSMmBackbone.submit` sends the result, not numbers, and stores what comes back. The algorithm is duplicated on the site, as GameSpice Stats' merge rule is, and both sides test the same worked example (the suite's first section).
 
 Glickman's paper prints 1464.06 and 151.52 for its worked example, from intermediates rounded to four places; exact arithmetic gives 1464.0507 and 151.5165, which is what every exact implementation reports. The suite checks the exact figures to 0.001: a tolerance wide enough to accept the printed ones would also accept a real slip. Every other check compares ratings with each other and would still pass against a rating system with an arithmetic slip in it, which is why section 1 is the one to keep.
 
 ## What the site would refuse is refused here
 
-A body the site rejects is a 400, and a 400 is not retried: the match is gone. So `define` and `submit` check the site's own rules first (`define_problem`, `submit_problem`, `config_problem`) and fail with the reason, and `DotMmPlaylist.validate` refuses a playlist id the site would refuse before a match is ever played in that queue. The rules and the one deliberate difference (an id with spaces round it) are in the [contract](backbone-contract.md#what-the-game-checks-before-sending).
+A body the site rejects is a 400, and a 400 is not retried: the match is gone. So `define` and `submit` check the site's own rules first (`define_problem`, `submit_problem`, `config_problem`) and fail with the reason, and `GSMmPlaylist.validate` refuses a playlist id the site would refuse before a match is ever played in that queue. The rules and the one deliberate difference (an id with spaces round it) are in the [contract](backbone-contract.md#what-the-game-checks-before-sending).
 
 ## The config's rating rules go to the site
 
-`tau`, `inactivity_period_days`, `min_participation` and `leaver_takes_loss` are sent per queue by `DotMmBackbone.define(playlists, config)`, so a ranked queue is rated online by the rule it is rated by offline. Details in the [contract](backbone-contract.md#rating-parity-the-configs-rules-go-with-the-declaration).
+`tau`, `inactivity_period_days`, `min_participation` and `leaver_takes_loss` are sent per queue by `GSMmBackbone.define(playlists, config)`, so a ranked queue is rated online by the rule it is rated by offline. Details in the [contract](backbone-contract.md#rating-parity-the-configs-rules-go-with-the-declaration).
 
 ## A result can arrive before its queue
 

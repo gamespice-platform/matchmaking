@@ -1,5 +1,5 @@
 @tool
-class_name DotMmPlaylist
+class_name GSMmPlaylist
 extends Resource
 
 ## One thing a person can queue for: a game, a mode, a shape of match, and how picky to be.
@@ -45,12 +45,12 @@ extends Resource
 ## split); past it, greedy plus swaps. Default 16, 0 = unlimited. The cost doubles per ticket:
 ## 16 is a few milliseconds, 24 is seconds. Above 63 tickets enumeration cannot index them and
 ## the balancer logs an error and goes greedy.
-@export_range(0, 63, 1, "or_greater") var exhaustive_limit: int = DotMmBalance.EXHAUSTIVE_LIMIT
+@export_range(0, 63, 1, "or_greater") var exhaustive_limit: int = GSMmBalance.EXHAUSTIVE_LIMIT
 
 ## Candidate sets the queue tries per anchor per region before giving up on that anchor for
 ## the pass. Default 4000, 0 = unlimited. A pass runs inside a frame; a budget that runs out
-## leaves the anchor waiting and is counted in [member DotMmQueue.budget_exhausted].
-@export_range(0, 1000000, 1, "or_greater") var search_budget: int = DotMmQueue.SEARCH_BUDGET
+## leaves the anchor waiting and is counted in [member GSMmQueue.budget_exhausted].
+@export_range(0, 1000000, 1, "or_greater") var search_budget: int = GSMmQueue.SEARCH_BUDGET
 
 @export_group("Skill")
 
@@ -169,35 +169,35 @@ static func site_id_problem(value: String) -> String:
 	return ""
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if String(id) == "" or String(id) != String(id).to_lower() or String(id).contains(" "):
-		return DotResult.fail(DotError.CODE_INVALID, "a playlist id must be lowercase with no spaces", String(id))
+		return GSResult.fail(GSError.CODE_INVALID, "a playlist id must be lowercase with no spaces", String(id))
 	# Lowercase is this addon's own rule; the rest is the site's, so a queue the site would
 	# refuse is refused here, before a match is ever played in it.
 	var site := site_id_problem(String(id))
 	if site != "":
-		return DotResult.fail(DotError.CODE_INVALID, "the backbone would refuse this playlist id: " + site, String(id))
+		return GSResult.fail(GSError.CODE_INVALID, "the backbone would refuse this playlist id: " + site, String(id))
 	if teams < 2:
-		return DotResult.fail(DotError.CODE_INVALID, "a match needs two sides", String(id))
+		return GSResult.fail(GSError.CODE_INVALID, "a match needs two sides", String(id))
 	if team_size < 1:
-		return DotResult.fail(DotError.CODE_INVALID, "a side of nobody", String(id))
+		return GSResult.fail(GSError.CODE_INVALID, "a side of nobody", String(id))
 	if skill_window_max < skill_window:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"the widest skill window is narrower than the first one",
 			"%s: %.0f < %.0f" % [id, skill_window_max, skill_window]
 		)
 	if exhaustive_limit < 0:
-		return DotResult.fail(DotError.CODE_INVALID, "exhaustive_limit is a ticket count, 0 = unlimited", "%s: %d" % [id, exhaustive_limit])
+		return GSResult.fail(GSError.CODE_INVALID, "exhaustive_limit is a ticket count, 0 = unlimited", "%s: %d" % [id, exhaustive_limit])
 	if search_budget < 0:
-		return DotResult.fail(DotError.CODE_INVALID, "search_budget is a count of candidate sets, 0 = unlimited", "%s: %d" % [id, search_budget])
+		return GSResult.fail(GSError.CODE_INVALID, "search_budget is a count of candidate sets, 0 = unlimited", "%s: %d" % [id, search_budget])
 	if max_latency_cap_ms < max_latency_ms:
-		return DotResult.fail(DotError.CODE_INVALID, "the latency cap is below the starting latency", String(id))
-	return DotResult.success(null)
+		return GSResult.fail(GSError.CODE_INVALID, "the latency cap is below the starting latency", String(id))
+	return GSResult.success(null)
 
 
-static func of(p_id: StringName, p_teams: int, p_team_size: int) -> DotMmPlaylist:
-	var p := DotMmPlaylist.new()
+static func of(p_id: StringName, p_teams: int, p_team_size: int) -> GSMmPlaylist:
+	var p := GSMmPlaylist.new()
 	p.id = p_id
 	p.display_name = String(p_id)
 	p.teams = p_teams

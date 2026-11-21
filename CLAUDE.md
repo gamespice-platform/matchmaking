@@ -4,7 +4,7 @@ Who plays whom: Glicko-2 ratings per queue, a queue whose tolerances widen with 
 
 Read the family [CLAUDE.md](../../CLAUDE.md) first, and [docs/backbone.md](../../docs/backbone.md) for anything that talks to website-city.
 
-**The distributable is `addons/dot_matchmaking/`.** It requires [GameSpice Core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored). dot-auth's `DotBackboneClient` is reached by duck typing (`post_integration`, `get_integration`). dot-server-deploy hosts a `DotMatchmaker` when its matchmaking config enables one.
+**The distributable is `addons/dot_matchmaking/`.** It requires [GameSpice Core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored). dot-auth's `GSBackboneClient` is reached by duck typing (`post_integration`, `get_integration`). dot-server-deploy hosts a `GSMatchmaker` when its matchmaking config enables one.
 
 ## Read before
 
@@ -17,19 +17,19 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first, and [docs/backbone.md](../..
 
 | Path | What |
 | --- | --- |
-| `rating/dot_mm_rating.gd` | `DotMmRating`: rating, deviation, volatility, games, last played; `conservative()` is what a board shows |
-| `rating/dot_mm_glicko2.gd` | `DotMmGlicko2`: the update (the paper, step for step), `age()`, `expected()`, `rate_match()` for teams |
-| `rating/dot_mm_rating_store.gd`, `_file.gd` | `DotMmRatingStore` (keyed by player and playlist, synchronous), `DotMmRatingStoreFile` (temp file and rename) |
-| `queue/dot_mm_playlist.gd` | `DotMmPlaylist`: one queue's shape, party cap, widening tolerances, `validate` with the site's id rule |
-| `queue/dot_mm_ticket.gd` | `DotMmTicket`: a solo player or a party, the unit of placement |
-| `queue/dot_mm_balance.gd` | `DotMmBalance`: whole tickets into sides, deterministic |
-| `queue/dot_mm_queue.gd`, `dot_mm_match.gd` | `DotMmQueue` (the pure `form(now)`), `DotMmMatch` (a found match with its explanation) |
-| `runtime/dot_matchmaker.gd` | `DotMatchmaker`: queues, passes, accept / decline / timeout, `allocator`, `report_result` |
-| `runtime/dot_mm_allocator_list.gd` | `DotMmAllocatorList`: a fixed server list, one match per server |
-| `net/dot_mm_backbone.gd` | `DotMmBackbone`: `define`, `submit`, `refresh`, `flush`, and the pre-send checks |
-| `dot_matchmaking_config.gd` | `DotMatchmakingConfig`: rating rules (`tau`, inactivity period, participation, leavers) |
+| `rating/dot_mm_rating.gd` | `GSMmRating`: rating, deviation, volatility, games, last played; `conservative()` is what a board shows |
+| `rating/dot_mm_glicko2.gd` | `GSMmGlicko2`: the update (the paper, step for step), `age()`, `expected()`, `rate_match()` for teams |
+| `rating/dot_mm_rating_store.gd`, `_file.gd` | `GSMmRatingStore` (keyed by player and playlist, synchronous), `GSMmRatingStoreFile` (temp file and rename) |
+| `queue/dot_mm_playlist.gd` | `GSMmPlaylist`: one queue's shape, party cap, widening tolerances, `validate` with the site's id rule |
+| `queue/dot_mm_ticket.gd` | `GSMmTicket`: a solo player or a party, the unit of placement |
+| `queue/dot_mm_balance.gd` | `GSMmBalance`: whole tickets into sides, deterministic |
+| `queue/dot_mm_queue.gd`, `dot_mm_match.gd` | `GSMmQueue` (the pure `form(now)`), `GSMmMatch` (a found match with its explanation) |
+| `runtime/dot_matchmaker.gd` | `GSMatchmaker`: queues, passes, accept / decline / timeout, `allocator`, `report_result` |
+| `runtime/dot_mm_allocator_list.gd` | `GSMmAllocatorList`: a fixed server list, one match per server |
+| `net/dot_mm_backbone.gd` | `GSMmBackbone`: `define`, `submit`, `refresh`, `flush`, and the pre-send checks |
+| `dot_matchmaking_config.gd` | `GSMatchmakingConfig`: rating rules (`tau`, inactivity period, participation, leavers) |
 | `examples/matchmaking_selftest.tscn` | the suite: no network, no wall clock |
-| `examples/cfg_selftest.tscn` | `matchmaking.yml` through `DotMatchmakingConfig.load_cfg`: `cfg/addons/dot_matchmaking/`, `cfg/server/addons/dot_matchmaking/` over it, the flat `cfg/matchmaking.yml` shim (WARN once, removed 2026-12-31) |
+| `examples/cfg_selftest.tscn` | `matchmaking.yml` through `GSMatchmakingConfig.load_cfg`: `cfg/addons/dot_matchmaking/`, `cfg/server/addons/dot_matchmaking/` over it, the flat `cfg/matchmaking.yml` shim (WARN once, removed 2026-12-31) |
 
 Paths except `examples/` are in `addons/dot_matchmaking/`.
 
@@ -45,7 +45,7 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 - A decline cools down only the decliner; everyone else keeps their `enqueued_at`; no free server cools down nobody. [design](docs/design.md#the-accept-step-keeps-everybodys-place)
 - `enqueue` takes ids, never ratings; the rating store stays synchronous. [design](docs/design.md#ratings-come-from-the-store-and-the-store-is-synchronous)
 - The site rates; `submit` sends results, never numbers. A change to the rule changes the site's `src/types/rating/glicko2.ts` in the same breath, and both test the same worked example. [contract](docs/backbone-contract.md#the-rule-the-site-must-implement-and-duplicate)
-- Anything the site would 400 is refused before sending (`define_problem`, `submit_problem`, `config_problem`, `DotMmPlaylist.validate`); player keys are scope keys, never `backbone:…`. [contract](docs/backbone-contract.md#what-the-game-checks-before-sending)
+- Anything the site would 400 is refused before sending (`define_problem`, `submit_problem`, `config_problem`, `GSMmPlaylist.validate`); player keys are scope keys, never `backbone:…`. [contract](docs/backbone-contract.md#what-the-game-checks-before-sending)
 - A `No playlist` 404 re-declares that one queue once and resubmits; a refused body is dropped from the retry queue (`is_refused`), a 401/403 or missing route stops `flush`. [contract](docs/backbone-contract.md#what-a-404-means)
 - Parenthesise bitwise tests: GDScript binds `&` tighter than `==`. [design](docs/design.md#balancing-places-whole-tickets)
 

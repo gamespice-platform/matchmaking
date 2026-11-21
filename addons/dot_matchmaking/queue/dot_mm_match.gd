@@ -1,4 +1,4 @@
-class_name DotMmMatch
+class_name GSMmMatch
 extends RefCounted
 
 ## A match the queue found: who, on which side, where, and how good a match it is.
@@ -12,10 +12,10 @@ var id: String = ""
 var playlist: StringName = &""
 var region: String = ""
 
-## One Array of [DotMmTicket] per side.
+## One Array of [GSMmTicket] per side.
 var sides: Array = []
 
-## 1 is a coin toss, 0 a foregone conclusion. See [member DotMmPlaylist.min_quality].
+## 1 is a coin toss, 0 a foregone conclusion. See [member GSMmPlaylist.min_quality].
 var quality: float = 0.0
 
 ## Chance side 0 wins, for a two-sided match; -1 otherwise.
@@ -44,14 +44,14 @@ func tickets() -> Array:
 func ticket_ids() -> PackedStringArray:
 	var out := PackedStringArray()
 	for t in tickets():
-		out.append((t as DotMmTicket).id)
+		out.append((t as GSMmTicket).id)
 	return out
 
 
 func player_ids() -> PackedStringArray:
 	var out := PackedStringArray()
 	for t in tickets():
-		out.append_array((t as DotMmTicket).member_ids())
+		out.append_array((t as GSMmTicket).member_ids())
 	return out
 
 
@@ -61,7 +61,7 @@ func roster() -> Array:
 	for side in sides:
 		var ids := PackedStringArray()
 		for t in side:
-			ids.append_array((t as DotMmTicket).member_ids())
+			ids.append_array((t as GSMmTicket).member_ids())
 		out.append(Array(ids))
 	return out
 

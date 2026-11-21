@@ -1,10 +1,10 @@
 @tool
-class_name DotMatchmakingConfig
-extends DotConfig
+class_name GSMatchmakingConfig
+extends GSConfig
 
 ## What a matchmaker needs to be told that is not about any one queue.
 ##
-## The per-queue numbers — windows, latency, party caps — are on [DotMmPlaylist], because
+## The per-queue numbers — windows, latency, party caps — are on [GSMmPlaylist], because
 ## they differ per mode and a single global value for them is how a free-for-all ends up
 ## as strict as a ranked queue. What is here is the machinery.
 
@@ -33,7 +33,7 @@ extends DotConfig
 ## and a player back after a year is matched on a number that described somebody else.
 @export_range(1.0, 365.0, 1.0) var inactivity_period_days: float = 14.0
 
-## Where [DotMmRatingStoreFile] keeps ratings when no store is given.
+## Where [GSMmRatingStoreFile] keeps ratings when no store is given.
 @export var ratings_file: String = "user://matchmaking/ratings.json"
 
 ## Participation below this is not rated at all.
@@ -61,15 +61,15 @@ func cli_prefix() -> String:
 	return "--mm-"
 
 
-## The addon name [DotAddonConfig] turns into the folder `dot_matchmaking`.
+## The addon name [GSAddonConfig] turns into the folder `dot_matchmaking`.
 const CFG_ADDON := "dot-matchmaking"
 
 
 ## Applies [param file_name] from `cfg/addons/dot_matchmaking/`, then the operator's `cfg/server/addons/dot_matchmaking/`.
 ## A flat [param legacy_dir]/[param file_name] is still read (one WARN) while no new copy exists.
 ## Keys not starting `mm_` belong to the deployment and are skipped; secrets stay file-only.
-func apply_cfg_file(file_name: String = "matchmaking.yml", legacy_dir: String = "res://cfg") -> DotResult:
-	return DotAddonConfig.apply_file(CFG_ADDON, file_name, legacy_dir, _apply_cfg_values)
+func apply_cfg_file(file_name: String = "matchmaking.yml", legacy_dir: String = "res://cfg") -> GSResult:
+	return GSAddonConfig.apply_file(CFG_ADDON, file_name, legacy_dir, _apply_cfg_values)
 
 
 func _apply_cfg_values(values: Dictionary, path: String) -> PackedStringArray:
@@ -86,7 +86,7 @@ func _apply_cfg_values(values: Dictionary, path: String) -> PackedStringArray:
 
 
 ## [method apply_cfg_file], then the environment, the command line and validation.
-func load_cfg(file_name: String = "matchmaking.yml", legacy_dir: String = "res://cfg") -> DotResult:
+func load_cfg(file_name: String = "matchmaking.yml", legacy_dir: String = "res://cfg") -> GSResult:
 	unknown_keys = PackedStringArray()
 	var file_res := apply_cfg_file(file_name, legacy_dir)
 	if not file_res.ok:
@@ -96,17 +96,17 @@ func load_cfg(file_name: String = "matchmaking.yml", legacy_dir: String = "res:/
 	var valid := validate()
 	if not valid.ok:
 		return valid.wrap("Configuration is invalid.")
-	return DotResult.success(self)
+	return GSResult.success(self)
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if tau <= 0.0:
-		return DotResult.fail(DotError.CODE_INVALID, "tau must be positive")
+		return GSResult.fail(GSError.CODE_INVALID, "tau must be positive")
 	if pass_interval_sec <= 0.0:
-		return DotResult.fail(DotError.CODE_INVALID, "a pass interval of zero is a busy loop")
+		return GSResult.fail(GSError.CODE_INVALID, "a pass interval of zero is a busy loop")
 	if max_tickets < 0:
-		return DotResult.fail(DotError.CODE_INVALID, "max_tickets must be 0 (unlimited) or more", "got %d" % max_tickets)
-	return DotResult.success(null)
+		return GSResult.fail(GSError.CODE_INVALID, "max_tickets must be 0 (unlimited) or more", "got %d" % max_tickets)
+	return GSResult.success(null)
 
 
 func describe_lines(_redact_sensitive: bool = true) -> PackedStringArray:

@@ -1,4 +1,4 @@
-class_name DotMmBalance
+class_name GSMmBalance
 extends RefCounted
 
 ## Splits whole tickets into sides as evenly as it can, and says how even that was.
@@ -16,7 +16,7 @@ extends RefCounted
 ## deterministic: the same tickets in the same order always give the same sides, so a
 ## server and a client explaining a match to a player agree about why.
 
-## The default for [param exhaustive_limit] ([member DotMmPlaylist.exhaustive_limit]): past this
+## The default for [param exhaustive_limit] ([member GSMmPlaylist.exhaustive_limit]): past this
 ## many tickets on two sides, stop enumerating. The cost doubles per ticket.
 const EXHAUSTIVE_LIMIT := 16
 
@@ -27,7 +27,7 @@ const EXHAUSTIVE_BITS := 63
 
 ## [param sizes] and [param strengths] are per ticket; returns an Array of Arrays of ticket indexes, one per side, or an empty Array when the tickets
 ## cannot be packed at all (three parties of two cannot make two sides of three). [param exhaustive_limit]: most tickets on two sides that are enumerated,
-## 0 = unlimited (every two-sided split is enumerated; a [DotLog] error and greedy past [constant EXHAUSTIVE_BITS], where the mask cannot index the tickets).
+## 0 = unlimited (every two-sided split is enumerated; a [GSLog] error and greedy past [constant EXHAUSTIVE_BITS], where the mask cannot index the tickets).
 static func split(sizes: Array, strengths: Array, sides: int, per_side: int,
 		exhaustive_limit: int = EXHAUSTIVE_LIMIT) -> Array:
 	var n := sizes.size()
@@ -40,7 +40,7 @@ static func split(sizes: Array, strengths: Array, sides: int, per_side: int,
 	if sides == 2 and (exhaustive_limit <= 0 or n <= exhaustive_limit):
 		if n <= EXHAUSTIVE_BITS:
 			return _exhaustive_two(sizes, strengths, per_side)
-		DotLog.error("matchmaking", "exhaustive balance asked for more tickets than a 64-bit mask holds; balancing greedily",
+		GSLog.error("matchmaking", "exhaustive balance asked for more tickets than a 64-bit mask holds; balancing greedily",
 			{"tickets": n, "exhaustive_limit": exhaustive_limit, "most": EXHAUSTIVE_BITS})
 	return _greedy(sizes, strengths, sides, per_side)
 

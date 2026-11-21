@@ -1,11 +1,11 @@
-class_name DotMmAllocatorList
+class_name GSMmAllocatorList
 extends RefCounted
 
 ## Places matches on a fixed list of servers, one match per server at a time.
 ##
 ## The allocator a small deployment actually has: a handful of servers it already runs,
 ## per region, and no orchestrator. A fleet that starts servers on demand writes its own
-## allocator with the same one method and hands it to [member DotMatchmaker.allocator].
+## allocator with the same one method and hands it to [member GSMatchmaker.allocator].
 ##
 ## [b]A match that cannot be placed is not lost.[/b] [method allocate] fails, the matchmaker
 ## puts every ticket back at its original place, and the next pass tries again — so a
@@ -22,7 +22,7 @@ func add_server(id: String, address: String, region: String, playlist_ids: Array
 	servers.append({"id": id, "address": address, "region": region, "playlists": playlist_ids})
 
 
-func allocate(m: DotMmMatch) -> DotResult:
+func allocate(m: GSMmMatch) -> GSResult:
 	for s_v in servers:
 		var s: Dictionary = s_v
 		var sid := str(s.get("id", ""))
@@ -34,9 +34,9 @@ func allocate(m: DotMmMatch) -> DotResult:
 		if not allowed.is_empty() and not allowed.has(String(m.playlist)) and not allowed.has(m.playlist):
 			continue
 		_busy[sid] = m.id
-		return DotResult.success({"server": sid, "address": str(s.get("address", "")), "match": m.id})
-	return DotResult.fail(
-		DotError.CODE_STATE,
+		return GSResult.success({"server": sid, "address": str(s.get("address", "")), "match": m.id})
+	return GSResult.fail(
+		GSError.CODE_STATE,
 		"No server is free in %s." % m.region,
 		String(m.playlist)
 	)

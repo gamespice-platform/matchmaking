@@ -1,4 +1,4 @@
-class_name DotMmBackbone
+class_name GSMmBackbone
 extends RefCounted
 
 ## The TMC backbone as the authority on ratings: results go up, ratings come back.
@@ -22,7 +22,7 @@ extends RefCounted
 ##
 ## [b]GameSpice Auth is not a dependency and its client is not named.[/b] [member client] is any
 ## object with [code]post_integration(path, body)[/code] and
-## [code]get_integration(path, query)[/code], which is [code]DotBackboneClient[/code]: it
+## [code]get_integration(path, query)[/code], which is [code]GSBackboneClient[/code]: it
 ## stamps [code]ts[/code] and [code]nonce[/code] and holds the credential, so nothing here
 ## knows a token exists.
 ##
@@ -82,7 +82,7 @@ const RATING_PERIOD_DAYS_MAX := 3650.0
 var client: Object = null
 
 ## Where answers land. Usually the matchmaker's own store.
-var store: DotMmRatingStore = null
+var store: GSMmRatingStore = null
 
 var _pending: Array = []
 ## Every queue [method define] has declared, by id: the row it sent, so a result filed
@@ -101,7 +101,7 @@ var refused: int = 0
 var failures: int = 0
 
 
-func _init(p_client: Object = null, p_store: DotMmRatingStore = null) -> void:
+func _init(p_client: Object = null, p_store: GSMmRatingStore = null) -> void:
 	client = p_client
 	store = p_store
 
@@ -118,16 +118,16 @@ func _init(p_client: Object = null, p_store: DotMmRatingStore = null) -> void:
 ##
 ## The rows are remembered (see [method submit]) before anything is sent, so a result filed
 ## while this call is still in flight can declare its queue itself.
-func define(playlists: Array, config: DotMatchmakingConfig = null) -> DotResult:
+func define(playlists: Array, config: GSMatchmakingConfig = null) -> GSResult:
 	var rules_problem := config_problem(config)
 	if rules_problem != "":
-		return DotResult.fail(DotError.CODE_INVALID, "the backbone would refuse these rating rules: " + rules_problem)
+		return GSResult.fail(GSError.CODE_INVALID, "the backbone would refuse these rating rules: " + rules_problem)
 	var rows := []
 	for pl_v in playlists:
-		var pl: DotMmPlaylist = pl_v
+		var pl: GSMmPlaylist = pl_v
 		var problem := define_problem(pl)
 		if problem != "":
-			return DotResult.fail(DotError.CODE_INVALID, "the backbone would refuse this playlist: " + problem,
+			return GSResult.fail(GSError.CODE_INVALID, "the backbone would refuse this playlist: " + problem,
 				String(pl.id) if pl != null else "")
 		var row := {
 			"id": String(pl.id),
@@ -148,7 +148,7 @@ func define(playlists: Array, config: DotMatchmakingConfig = null) -> DotResult:
 		rows.append(row)
 	for row in rows:
 		_declared[str(row["id"])] = row
-	var res := DotResult.success({"ok": true, "created": 0, "updated": 0})
+	var res := GSResult.success({"ok": true, "created": 0, "updated": 0})
 	for i in range(0, rows.size(), DEFINE_BATCH):
 		res = await _post(DEFINE_PATH, {"playlists": rows.slice(i, i + DEFINE_BATCH)})
 		if not res.ok:
@@ -159,7 +159,7 @@ func define(playlists: Array, config: DotMatchmakingConfig = null) -> DotResult:
 ## Where [param config]'s rating rules differ from the site's defaults, one line each; empty
 ## when they agree. Since [method define] sends the config's rules this is no longer a
 ## problem to warn about: it is what a queue declared WITHOUT a config would be rated by.
-static func parity_gaps(config: DotMatchmakingConfig) -> PackedStringArray:
+static func parity_gaps(config: GSMatchmakingConfig) -> PackedStringArray:
 	var out := PackedStringArray()
 	if config == null:
 		return out
@@ -178,7 +178,7 @@ static func parity_gaps(config: DotMatchmakingConfig) -> PackedStringArray:
 
 ## Why the site would refuse [param config]'s rating rules in a [code]define[/code], or
 ## [code]""[/code]. A null config sends no rules and is never refused.
-static func config_problem(config: DotMatchmakingConfig) -> String:
+static func config_problem(config: GSMatchmakingConfig) -> String:
 	if config == null:
 		return ""
 	if is_nan(config.tau) or config.tau <= 0.0 or config.tau > TAU_MAX:
@@ -193,7 +193,7 @@ static func config_problem(config: DotMatchmakingConfig) -> String:
 
 
 ## Why the site would refuse [param pl] in a [code]define[/code], or [code]""[/code].
-static func define_problem(pl: DotMmPlaylist) -> String:
+static func define_problem(pl: GSMmPlaylist) -> String:
 	if pl == null:
 		return "a null playlist"
 	var valid := pl.validate()
@@ -217,7 +217,7 @@ static func define_problem(pl: DotMmPlaylist) -> String:
 ## the site would answer under the trimmed key and the rating would land on nobody here.
 static func submit_problem(playlist_id: String, match_id: String, sides: Array, placements: Array,
 		participation: Dictionary = {}) -> String:
-	var pl := DotMmPlaylist.site_id_problem(playlist_id)
+	var pl := GSMmPlaylist.site_id_problem(playlist_id)
 	if pl != "":
 		return "playlist %s: %s" % [playlist_id, pl]
 	if match_id.is_empty() or match_id.length() > MATCH_ID_MAX or not _is_key(match_id):
@@ -257,7 +257,7 @@ static func _is_key(s: String) -> bool:
 	return RegEx.create_from_string("^[A-Za-z0-9._:-]+$").search(s) != null
 
 
-## Files one finished match. See [method DotMatchmaker.report_result] for the arguments.
+## Files one finished match. See [method GSMatchmaker.report_result] for the arguments.
 ##
 ## Checked against the site's rules first ([method submit_problem]): a body it would
 ## refuse fails here with the reason, is not sent, and is not kept for retry.
@@ -266,10 +266,10 @@ static func _is_key(s: String) -> bool:
 ## declared from what [method define] last sent for it, and the result goes again, once.
 ## A queue this backbone never declared cannot be, and that 404 is passed on as it was.
 func submit(playlist_id: StringName, match_id: String, sides: Array, placements: Array,
-		participation: Dictionary = {}, leavers: PackedStringArray = PackedStringArray()) -> DotResult:
+		participation: Dictionary = {}, leavers: PackedStringArray = PackedStringArray()) -> GSResult:
 	var problem := submit_problem(String(playlist_id), match_id, sides, placements, participation)
 	if problem != "":
-		return DotResult.fail(DotError.CODE_INVALID, "the backbone would refuse this result: " + problem, match_id)
+		return GSResult.fail(GSError.CODE_INVALID, "the backbone would refuse this result: " + problem, match_id)
 	var body_sides := []
 	for side in sides:
 		var rows := []
@@ -306,7 +306,7 @@ func submit(playlist_id: StringName, match_id: String, sides: Array, placements:
 ## may pass later (unreachable, 5xx, 429, a credential or route problem). One the site
 ## refused outright ([method is_refused]: a 400, a queue still undeclared) would be refused
 ## every time and hold every result behind it, so it is let go, counted in [member refused].
-func flush() -> DotResult:
+func flush() -> GSResult:
 	var done := 0
 	while not _pending.is_empty():
 		var body: Dictionary = _pending[0]
@@ -314,28 +314,28 @@ func flush() -> DotResult:
 		if not raw.ok and is_refused(raw):
 			_pending.pop_front()
 			refused += 1
-			DotLog.warn(CHANNEL, "a kept result was refused by the backbone and is let go", {
+			GSLog.warn(CHANNEL, "a kept result was refused by the backbone and is let go", {
 				"playlist": str(body.get("playlist", "")), "match": str(body.get("matchId", "")),
 				"why": str(_explain(raw, SCOPE_WRITE).error),
 			})
 			continue
 		var res := _explain(raw, SCOPE_WRITE)
 		if not res.ok:
-			return res if done == 0 else DotResult.success(done)
+			return res if done == 0 else GSResult.success(done)
 		_pending.pop_front()
 		_absorb(StringName(str(body.get("playlist", ""))), res.value)
 		done += 1
-	return DotResult.success(done)
+	return GSResult.success(done)
 
 
 ## Pulls current ratings for [param player_ids] into [member store], [constant READ_BATCH]
 ## at a time. Value: how many ratings were stored.
-func refresh(playlist_id: StringName, player_ids: PackedStringArray) -> DotResult:
+func refresh(playlist_id: StringName, player_ids: PackedStringArray) -> GSResult:
 	if client == null or not client.has_method("get_integration"):
-		return DotResult.fail(DotError.CODE_STATE, "no backbone client")
+		return GSResult.fail(GSError.CODE_STATE, "no backbone client")
 	var stored := 0
 	for i in range(0, player_ids.size(), READ_BATCH):
-		var res: DotResult = await client.call("get_integration", PLAYERS_PATH, {
+		var res: GSResult = await client.call("get_integration", PLAYERS_PATH, {
 			"playlist": String(playlist_id),
 			"players": ",".join(player_ids.slice(i, i + READ_BATCH)),
 		})
@@ -345,7 +345,7 @@ func refresh(playlist_id: StringName, player_ids: PackedStringArray) -> DotResul
 		if not got.ok:
 			return got
 		stored += int(got.value)
-	return DotResult.success(stored)
+	return GSResult.success(stored)
 
 
 func pending_count() -> int:
@@ -353,37 +353,37 @@ func pending_count() -> int:
 
 
 ## Stores the ratings a response carries: [code]{ok, ratings: {player: {...}}}[/code].
-func _absorb(playlist_id: StringName, value: Variant) -> DotResult:
+func _absorb(playlist_id: StringName, value: Variant) -> GSResult:
 	if not (value is Dictionary):
-		return DotResult.fail(DotError.CODE_PARSE, "the backbone answered with something that is not an object")
+		return GSResult.fail(GSError.CODE_PARSE, "the backbone answered with something that is not an object")
 	var ratings: Variant = (value as Dictionary).get("ratings", {})
 	if not (ratings is Dictionary):
-		return DotResult.fail(DotError.CODE_PARSE, "ratings is not an object")
+		return GSResult.fail(GSError.CODE_PARSE, "ratings is not an object")
 	var n := 0
 	for pid in ratings:
 		var raw: Variant = (ratings as Dictionary)[pid]
 		if not (raw is Dictionary):
 			continue
-		var parsed := DotMmRating.from_dict(raw as Dictionary)
+		var parsed := GSMmRating.from_dict(raw as Dictionary)
 		if not parsed.ok:
-			DotLog.warn(CHANNEL, "a rating from the backbone was refused", {"player": str(pid), "detail": str(parsed.error)})
+			GSLog.warn(CHANNEL, "a rating from the backbone was refused", {"player": str(pid), "detail": str(parsed.error)})
 			continue
 		if store != null:
 			store.put(str(pid), playlist_id, parsed.value)
 		n += 1
-	return DotResult.success(n)
+	return GSResult.success(n)
 
 
 ## One submit, and on the site's "no such playlist" a define of that one queue and one more
 ## submit. Not a loop: a queue the site still does not have after that (refused for the
 ## owner's cap, say) is the second answer, returned. Returned as the client answered (the
 ## caller [method _explain]s it), so the caller can still tell what the site said.
-func _post_submit(body: Dictionary) -> DotResult:
+func _post_submit(body: Dictionary) -> GSResult:
 	var res := await _post_raw(SUBMIT_PATH, body)
 	var playlist := str(body.get("playlist", ""))
 	if res.ok or not is_undeclared(res) or not _declared.has(playlist):
 		return res
-	DotLog.info(CHANNEL, "a result came before its queue was declared; declaring it and filing again", {
+	GSLog.info(CHANNEL, "a result came before its queue was declared; declaring it and filing again", {
 		"playlist": playlist, "match": str(body.get("matchId", "")),
 	})
 	var defined := await _post_raw(DEFINE_PATH, {"playlists": [_declared[playlist]]})
@@ -396,7 +396,7 @@ func _post_submit(body: Dictionary) -> DotResult:
 ## that sending it again gets the same answer: a 4xx other than 401, 403, 408 and 429, and of
 ## the 404s only its "No playlist" (Next's page or a missing app is not about the body).
 ## GameSpice Core counts any non-5xx status but those as retryable, so this is checked first.
-static func is_refused(res: DotResult) -> bool:
+static func is_refused(res: GSResult) -> bool:
 	if res == null or res.ok or res.error == null:
 		return false
 	var status := res.error.http_status
@@ -407,20 +407,20 @@ static func is_refused(res: DotResult) -> bool:
 
 ## Whether [param res], as the client answered it (before [method _explain]), is the site saying a playlist was never declared: its own JSON 404,
 ## not Next's not-found page and not a missing app or server.
-static func is_undeclared(res: DotResult) -> bool:
+static func is_undeclared(res: GSResult) -> bool:
 	if res == null or res.ok or res.error == null or res.error.http_status != 404:
 		return false
 	return site_error(res.error.detail).begins_with("No playlist")
 
 
-func _post(path: String, body: Dictionary) -> DotResult:
+func _post(path: String, body: Dictionary) -> GSResult:
 	return _explain(await _post_raw(path, body), SCOPE_WRITE)
 
 
-func _post_raw(path: String, body: Dictionary) -> DotResult:
+func _post_raw(path: String, body: Dictionary) -> GSResult:
 	if client == null or not client.has_method("post_integration"):
-		return DotResult.fail(DotError.CODE_STATE, "no backbone client")
-	var res: DotResult = await client.call("post_integration", path, body)
+		return GSResult.fail(GSError.CODE_STATE, "no backbone client")
+	var res: GSResult = await client.call("post_integration", path, body)
 	if res.ok:
 		sent += 1
 	else:
@@ -432,8 +432,8 @@ func _post_raw(path: String, body: Dictionary) -> DotResult:
 ## answer JSON with an [code]error[/code] ("No playlist "duel" — declare it with
 ## rating/define first.", or the credential's app or server no longer existing). A route
 ## that does not exist is Next's HTML not-found page, with no JSON at all. GameSpice Core's
-## [DotHttp] keeps the first 512 bytes of the body in [member DotError.detail].
-func _explain(res: DotResult, scope: String) -> DotResult:
+## [GSHttp] keeps the first 512 bytes of the body in [member GSError.detail].
+func _explain(res: GSResult, scope: String) -> GSResult:
 	if res.error != null and res.error.http_status == 403:
 		return res.wrap("the integration credential needs the %s scope" % scope)
 	if res.error != null and res.error.http_status == 404:
@@ -463,6 +463,6 @@ func _warn_dropped() -> void:
 	if _drop_warn_ms >= 0 and now_ms - _drop_warn_ms < 10000:
 		return
 	_drop_warn_ms = now_ms
-	DotLog.warn(CHANNEL, "retry queue full; oldest results dropped (raise max_pending, 0 = unlimited)",
+	GSLog.warn(CHANNEL, "retry queue full; oldest results dropped (raise max_pending, 0 = unlimited)",
 		{"dropped_since_warning": _drops_unwarned, "dropped": dropped, "max_pending": max_pending})
 	_drops_unwarned = 0

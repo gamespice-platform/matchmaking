@@ -1,4 +1,4 @@
-class_name DotMmGlicko2
+class_name GSMmGlicko2
 extends RefCounted
 
 ## Glicko-2, and the one extension a team game cannot do without.
@@ -58,8 +58,8 @@ static func expected(a_rating: float, a_dev: float, b_rating: float, b_dev: floa
 ##
 ## [param tau] constrains how fast volatility can change. The paper suggests 0.3 to 1.2;
 ## smaller is steadier.
-static func update(player: DotMmRating, results: Array, tau: float = 0.5) -> DotMmRating:
-	var mu := (player.rating - DotMmRating.DEFAULT_RATING) / SCALE
+static func update(player: GSMmRating, results: Array, tau: float = 0.5) -> GSMmRating:
+	var mu := (player.rating - GSMmRating.DEFAULT_RATING) / SCALE
 	var phi := player.deviation / SCALE
 	var sigma := player.volatility
 
@@ -73,8 +73,8 @@ static func update(player: DotMmRating, results: Array, tau: float = 0.5) -> Dot
 		if w <= 0.0:
 			continue
 		any = true
-		var mu_j := (float(entry.get("rating", DotMmRating.DEFAULT_RATING)) - DotMmRating.DEFAULT_RATING) / SCALE
-		var phi_j := float(entry.get("deviation", DotMmRating.DEFAULT_DEVIATION)) / SCALE
+		var mu_j := (float(entry.get("rating", GSMmRating.DEFAULT_RATING)) - GSMmRating.DEFAULT_RATING) / SCALE
+		var phi_j := float(entry.get("deviation", GSMmRating.DEFAULT_DEVIATION)) / SCALE
 		var g := _g(phi_j)
 		var e := 1.0 / (1.0 + exp(-g * (mu - mu_j)))
 		inv_v += w * g * g * e * (1.0 - e)
@@ -85,7 +85,7 @@ static func update(player: DotMmRating, results: Array, tau: float = 0.5) -> Dot
 	# Step 6 of the paper for somebody who did not play: only the uncertainty changes.
 	if not any or inv_v <= 0.0:
 		var grown := sqrt(phi * phi + sigma * sigma)
-		out.deviation = clampf(grown * SCALE, DotMmRating.MIN_DEVIATION, DotMmRating.MAX_DEVIATION)
+		out.deviation = clampf(grown * SCALE, GSMmRating.MIN_DEVIATION, GSMmRating.MAX_DEVIATION)
 		return out
 
 	var v := 1.0 / inv_v
@@ -96,8 +96,8 @@ static func update(player: DotMmRating, results: Array, tau: float = 0.5) -> Dot
 	var new_phi := 1.0 / sqrt(1.0 / (phi_star * phi_star) + 1.0 / v)
 	var new_mu := mu + new_phi * new_phi * sum
 
-	out.rating = new_mu * SCALE + DotMmRating.DEFAULT_RATING
-	out.deviation = clampf(new_phi * SCALE, DotMmRating.MIN_DEVIATION, DotMmRating.MAX_DEVIATION)
+	out.rating = new_mu * SCALE + GSMmRating.DEFAULT_RATING
+	out.deviation = clampf(new_phi * SCALE, GSMmRating.MIN_DEVIATION, GSMmRating.MAX_DEVIATION)
 	out.volatility = new_sigma
 	return out
 
@@ -106,19 +106,19 @@ static func update(player: DotMmRating, results: Array, tau: float = 0.5) -> Dot
 ##
 ## What makes a player back after three months move quickly for a few games instead of
 ## being matched on a number that described somebody they no longer are.
-static func age(player: DotMmRating, periods: float) -> DotMmRating:
+static func age(player: GSMmRating, periods: float) -> GSMmRating:
 	var out := player.copy()
 	if periods <= 0.0:
 		return out
 	var phi := player.deviation / SCALE
 	var grown := sqrt(phi * phi + periods * player.volatility * player.volatility)
-	out.deviation = clampf(grown * SCALE, DotMmRating.MIN_DEVIATION, DotMmRating.MAX_DEVIATION)
+	out.deviation = clampf(grown * SCALE, GSMmRating.MIN_DEVIATION, GSMmRating.MAX_DEVIATION)
 	return out
 
 
 ## Rates one finished match between any number of teams.
 ##
-## [param teams] is an Array of Arrays of [DotMmRating]; [param placements] gives each
+## [param teams] is an Array of Arrays of [GSMmRating]; [param placements] gives each
 ## team's finishing place, lower is better, equal is a draw between those two. A
 ## free-for-all is teams of one. [param weights], optional, mirrors [param teams] with
 ## each player's participation in 0..1.
@@ -134,7 +134,7 @@ static func rate_match(teams: Array, placements: Array, weights: Array = [],
 		var total := 0.0
 		var dev_sq := 0.0
 		for p in list:
-			var r: DotMmRating = p
+			var r: GSMmRating = p
 			total += r.rating
 			dev_sq += r.deviation * r.deviation
 		var n := maxi(1, list.size())
@@ -146,7 +146,7 @@ static func rate_match(teams: Array, placements: Array, weights: Array = [],
 		var list: Array = teams[i]
 		var rated := []
 		for k in range(list.size()):
-			var r: DotMmRating = list[k]
+			var r: GSMmRating = list[k]
 			var w := 1.0
 			if i < weights.size() and k < (weights[i] as Array).size():
 				w = float((weights[i] as Array)[k])

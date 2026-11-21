@@ -27,7 +27,7 @@ var _now: Array[float] = [1_000_000.0]
 
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	await _run()
 
 
@@ -71,8 +71,8 @@ func _test_glicko_matches_the_paper() -> void:
 
 	# Section 3 of "Example of the Glicko-2 system": a 1500 ±200 player beats a 1400 ±30,
 	# loses to a 1550 ±100 and loses to a 1700 ±300, with tau 0.5.
-	var p := DotMmRating.of(1500.0, 200.0, 0.06)
-	var after := DotMmGlicko2.update(p, [
+	var p := GSMmRating.of(1500.0, 200.0, 0.06)
+	var after := GSMmGlicko2.update(p, [
 		{"rating": 1400.0, "deviation": 30.0, "score": 1.0},
 		{"rating": 1550.0, "deviation": 100.0, "score": 0.0},
 		{"rating": 1700.0, "deviation": 300.0, "score": 0.0},
@@ -85,18 +85,18 @@ func _test_glicko_matches_the_paper() -> void:
 	_check(absf(after.volatility - 0.05999) < 0.00001, "the new volatility is 0.05999 (got %.6f)" % after.volatility)
 	_check(p.rating == 1500.0, "and the rating passed in was not modified")
 
-	var idle := DotMmGlicko2.update(p, [], 0.5)
+	var idle := GSMmGlicko2.update(p, [], 0.5)
 	_check(idle.rating == 1500.0, "a period with no games does not move the rating")
 	_check(idle.deviation > p.deviation, "and widens the deviation, because we know less than we did")
 
-	var away := DotMmGlicko2.age(DotMmRating.of(1800.0, 50.0), 10.0)
+	var away := GSMmGlicko2.age(GSMmRating.of(1800.0, 50.0), 10.0)
 	_check(away.deviation > 50.0 and away.rating == 1800.0, "absence widens the deviation and leaves the rating")
-	_check(DotMmGlicko2.age(DotMmRating.of(1500.0, 340.0), 1000.0).deviation <= 350.0, "and never past a stranger's")
+	_check(GSMmGlicko2.age(GSMmRating.of(1500.0, 340.0), 1000.0).deviation <= 350.0, "and never past a stranger's")
 
-	var known := DotMmRating.of(1800.0, 50.0)
+	var known := GSMmRating.of(1800.0, 50.0)
 	_check(known.conservative() == 1700.0, "the shown number is rating minus two deviations")
 
-	var bad := DotMmRating.from_dict({"rating": NAN, "deviation": 50.0, "volatility": 0.06})
+	var bad := GSMmRating.from_dict({"rating": NAN, "deviation": 50.0, "volatility": 0.06})
 	_check(not bad.ok, "a NaN rating is refused on load, because it would spread to every opponent")
 
 
@@ -105,47 +105,47 @@ func _test_glicko_matches_the_paper() -> void:
 func _test_teams() -> void:
 	_section("Teams: the side's expectation, the player's own step size")
 
-	var star := DotMmRating.of(2000.0, 60.0)
-	var weak_a := DotMmRating.of(1000.0, 60.0)
-	var weak_b := DotMmRating.of(1000.0, 60.0)
-	var opp := [DotMmRating.of(1500.0, 60.0), DotMmRating.of(1500.0, 60.0), DotMmRating.of(1500.0, 60.0)]
+	var star := GSMmRating.of(2000.0, 60.0)
+	var weak_a := GSMmRating.of(1000.0, 60.0)
+	var weak_b := GSMmRating.of(1000.0, 60.0)
+	var opp := [GSMmRating.of(1500.0, 60.0), GSMmRating.of(1500.0, 60.0), GSMmRating.of(1500.0, 60.0)]
 
 	# The star's side averages 1333 against 1500 and loses, as it was expected to.
-	var rated := DotMmGlicko2.rate_match([[star, weak_a, weak_b], opp], [2, 1])
-	var star_after: DotMmRating = (rated[0] as Array)[0]
+	var rated := GSMmGlicko2.rate_match([[star, weak_a, weak_b], opp], [2, 1])
+	var star_after: GSMmRating = (rated[0] as Array)[0]
 
 	# The naive extension rates the star against the other side's mean alone.
-	var naive := DotMmGlicko2.update(star, [{"rating": 1500.0, "deviation": 60.0, "score": 0.0}])
+	var naive := GSMmGlicko2.update(star, [{"rating": 1500.0, "deviation": 60.0, "score": 0.0}])
 	var shifted := star.rating - star_after.rating
 	var naive_drop := star.rating - naive.rating
 	_check(shifted < naive_drop / 3.0, "a strong player on a weak side that lost as expected barely moves (%.1f against %.1f)" % [shifted, naive_drop])
 
 	var winners: Array = rated[1]
-	_check((winners[0] as DotMmRating).rating > 1500.0, "the winners go up")
-	_check((winners[0] as DotMmRating).games == 1, "and have a game on the count")
+	_check((winners[0] as GSMmRating).rating > 1500.0, "the winners go up")
+	_check((winners[0] as GSMmRating).games == 1, "and have a game on the count")
 
-	var fresh := DotMmRating.new()
-	var vet := DotMmRating.of(1500.0, 40.0)
-	var pair := DotMmGlicko2.rate_match([[fresh, vet], [DotMmRating.new(), DotMmRating.of(1500.0, 40.0)]], [1, 2])
-	var fresh_after: DotMmRating = (pair[0] as Array)[0]
-	var vet_after: DotMmRating = (pair[0] as Array)[1]
+	var fresh := GSMmRating.new()
+	var vet := GSMmRating.of(1500.0, 40.0)
+	var pair := GSMmGlicko2.rate_match([[fresh, vet], [GSMmRating.new(), GSMmRating.of(1500.0, 40.0)]], [1, 2])
+	var fresh_after: GSMmRating = (pair[0] as Array)[0]
+	var vet_after: GSMmRating = (pair[0] as Array)[1]
 	_check(fresh_after.rating - 1500.0 > 3.0 * (vet_after.rating - 1500.0), "on one side, a newcomer moves far more than a veteran")
 
-	var draw := DotMmGlicko2.rate_match([[DotMmRating.of(1500.0, 100.0)], [DotMmRating.of(1500.0, 100.0)]], [1, 1])
-	_check(absf(((draw[0] as Array)[0] as DotMmRating).rating - 1500.0) < 0.001, "an even draw moves nobody's rating")
+	var draw := GSMmGlicko2.rate_match([[GSMmRating.of(1500.0, 100.0)], [GSMmRating.of(1500.0, 100.0)]], [1, 1])
+	_check(absf(((draw[0] as Array)[0] as GSMmRating).rating - 1500.0) < 0.001, "an even draw moves nobody's rating")
 
-	var partial := DotMmGlicko2.rate_match(
-		[[DotMmRating.of(1500.0, 200.0)], [DotMmRating.of(1500.0, 200.0)]], [1, 2], [[0.0], [1.0]]
+	var partial := GSMmGlicko2.rate_match(
+		[[GSMmRating.of(1500.0, 200.0)], [GSMmRating.of(1500.0, 200.0)]], [1, 2], [[0.0], [1.0]]
 	)
-	var absent: DotMmRating = (partial[0] as Array)[0]
+	var absent: GSMmRating = (partial[0] as Array)[0]
 	_check(absent.rating == 1500.0 and absent.games == 0, "somebody with no participation is not rated and gains no game")
 
-	var ffa := DotMmGlicko2.rate_match(
-		[[DotMmRating.new()], [DotMmRating.new()], [DotMmRating.new()], [DotMmRating.new()]], [1, 2, 3, 4]
+	var ffa := GSMmGlicko2.rate_match(
+		[[GSMmRating.new()], [GSMmRating.new()], [GSMmRating.new()], [GSMmRating.new()]], [1, 2, 3, 4]
 	)
-	var first: float = ((ffa[0] as Array)[0] as DotMmRating).rating
-	var last: float = ((ffa[3] as Array)[0] as DotMmRating).rating
-	var second: float = ((ffa[1] as Array)[0] as DotMmRating).rating
+	var first: float = ((ffa[0] as Array)[0] as GSMmRating).rating
+	var last: float = ((ffa[3] as Array)[0] as GSMmRating).rating
+	var second: float = ((ffa[1] as Array)[0] as GSMmRating).rating
 	_check(first > second and second > last, "a free-for-all orders ratings by place")
 
 
@@ -155,50 +155,50 @@ func _test_balance() -> void:
 	_section("Balancing moves whole parties and finds the best split")
 
 	# 2000, 1000, 1600, 1400 in solos: the best split is {2000,1000} v {1600,1400}.
-	var split := DotMmBalance.split([1, 1, 1, 1], [2000.0, 1000.0, 1600.0, 1400.0], 2, 2)
+	var split := GSMmBalance.split([1, 1, 1, 1], [2000.0, 1000.0, 1600.0, 1400.0], 2, 2)
 	_check(split.size() == 2, "four solos make two sides")
-	_check(DotMmBalance.spread(split, [2000.0, 1000.0, 1600.0, 1400.0]) == 0.0, "and the split is exactly even")
+	_check(GSMmBalance.spread(split, [2000.0, 1000.0, 1600.0, 1400.0]) == 0.0, "and the split is exactly even")
 
 	# A party of three and three solos into two sides of three: the party must be whole.
 	var sizes := [3, 1, 1, 1]
 	var strengths := [4500.0, 1500.0, 1500.0, 1500.0]
-	var s2 := DotMmBalance.split(sizes, strengths, 2, 3)
+	var s2 := GSMmBalance.split(sizes, strengths, 2, 3)
 	var party_side := -1
 	for i in range(s2.size()):
 		if (s2[i] as Array).has(0):
 			party_side = i
 	_check(party_side >= 0 and (s2[party_side] as Array).size() == 1, "a party of three fills its side alone and is not split")
 
-	_check(DotMmBalance.split([2, 2, 2], [1.0, 1.0, 1.0], 2, 3).is_empty(), "three parties of two cannot make two sides of three")
-	_check(DotMmBalance.split([1, 1, 1], [1.0, 1.0, 1.0], 2, 2).is_empty(), "and three people cannot fill four seats")
+	_check(GSMmBalance.split([2, 2, 2], [1.0, 1.0, 1.0], 2, 3).is_empty(), "three parties of two cannot make two sides of three")
+	_check(GSMmBalance.split([1, 1, 1], [1.0, 1.0, 1.0], 2, 2).is_empty(), "and three people cannot fill four seats")
 
-	var many := DotMmBalance.split([1, 1, 1, 1, 1, 1], [1600.0, 1500.0, 1400.0, 1600.0, 1500.0, 1400.0], 3, 2)
+	var many := GSMmBalance.split([1, 1, 1, 1, 1, 1], [1600.0, 1500.0, 1400.0, 1600.0, 1500.0, 1400.0], 3, 2)
 	_check(many.size() == 3, "three sides use the greedy path")
-	_check(DotMmBalance.spread(many, [1600.0, 1500.0, 1400.0, 1600.0, 1500.0, 1400.0]) == 0.0, "and it still finds an even split here")
+	_check(GSMmBalance.spread(many, [1600.0, 1500.0, 1400.0, 1600.0, 1500.0, 1400.0]) == 0.0, "and it still finds an even split here")
 
-	var again := DotMmBalance.split([1, 1, 1, 1], [2000.0, 1000.0, 1600.0, 1400.0], 2, 2)
+	var again := GSMmBalance.split([1, 1, 1, 1], [2000.0, 1000.0, 1600.0, 1400.0], 2, 2)
 	_check(str(again) == str(split), "the same input gives the same sides, every time")
 
-	var unlimited := DotMmBalance.split([1, 1, 1, 1], [2000.0, 1000.0, 1600.0, 1400.0], 2, 2, 0)
+	var unlimited := GSMmBalance.split([1, 1, 1, 1], [2000.0, 1000.0, 1600.0, 1400.0], 2, 2, 0)
 	_check(str(unlimited) == str(split), "exhaustive_limit 0 (unlimited) still enumerates a small split")
-	var greedy := DotMmBalance.split([1, 1, 1, 1], [2000.0, 1000.0, 1600.0, 1400.0], 2, 2, 2)
-	_check(greedy.size() == 2 and DotMmBalance.spread(greedy, [2000.0, 1000.0, 1600.0, 1400.0]) == 0.0, "a limit below the ticket count takes the greedy path and still balances")
-	var pl := DotMmPlaylist.of(&"caps", 2, 100)
-	_check(pl.exhaustive_limit == DotMmBalance.EXHAUSTIVE_LIMIT, "a playlist's exhaustive_limit defaults to 16")
+	var greedy := GSMmBalance.split([1, 1, 1, 1], [2000.0, 1000.0, 1600.0, 1400.0], 2, 2, 2)
+	_check(greedy.size() == 2 and GSMmBalance.spread(greedy, [2000.0, 1000.0, 1600.0, 1400.0]) == 0.0, "a limit below the ticket count takes the greedy path and still balances")
+	var pl := GSMmPlaylist.of(&"caps", 2, 100)
+	_check(pl.exhaustive_limit == GSMmBalance.EXHAUSTIVE_LIMIT, "a playlist's exhaustive_limit defaults to 16")
 	_check(pl.validate().ok, "a side of 100 (past the inspector's 64) validates")
 	pl.exhaustive_limit = -1
 	_check(not pl.validate().ok, "a negative exhaustive_limit is refused, not clamped")
 	pl.exhaustive_limit = 16
-	_check(pl.search_budget == DotMmQueue.SEARCH_BUDGET, "a playlist's search_budget defaults to 4000")
+	_check(pl.search_budget == GSMmQueue.SEARCH_BUDGET, "a playlist's search_budget defaults to 4000")
 	pl.search_budget = -1
 	_check(not pl.validate().ok, "a negative search_budget is refused, not clamped")
 
-	var tight := DotMmPlaylist.of(&"tight", 2, 1)
+	var tight := GSMmPlaylist.of(&"tight", 2, 1)
 	tight.min_quality = 0.0
 	tight.search_budget = 1
-	var tq := DotMmQueue.new(tight)
-	tq.add(DotMmTicket.solo("x", &"tight", DotMmRating.of(1500.0, 80.0), {"eu": 30}, 0.0))
-	tq.add(DotMmTicket.solo("y", &"tight", DotMmRating.of(1500.0, 80.0), {"eu": 30}, 0.0))
+	var tq := GSMmQueue.new(tight)
+	tq.add(GSMmTicket.solo("x", &"tight", GSMmRating.of(1500.0, 80.0), {"eu": 30}, 0.0))
+	tq.add(GSMmTicket.solo("y", &"tight", GSMmRating.of(1500.0, 80.0), {"eu": 30}, 0.0))
 	_check(tq.form(0.0).is_empty() and tq.budget_exhausted > 0, "a search budget that runs out leaves the pair waiting, and is counted")
 	tight.search_budget = 0
 	_check(tq.form(0.0).size() == 1, "search_budget 0 (unlimited) matches them")
@@ -209,74 +209,74 @@ func _test_balance() -> void:
 func _test_queue() -> void:
 	_section("The queue: region first, then skill, parties whole")
 
-	var duel := DotMmPlaylist.of(&"duel", 2, 1)
+	var duel := GSMmPlaylist.of(&"duel", 2, 1)
 	duel.skill_window = 100.0
 	duel.skill_window_growth = 10.0
 	duel.min_quality = 0.0
-	var q := DotMmQueue.new(duel)
+	var q := GSMmQueue.new(duel)
 	var t0 := 1000.0
 
-	q.add(DotMmTicket.solo("a", &"duel", DotMmRating.of(1500.0, 80.0), {"eu": 30}, t0))
-	q.add(DotMmTicket.solo("b", &"duel", DotMmRating.of(1550.0, 80.0), {"eu": 40}, t0 + 1.0))
+	q.add(GSMmTicket.solo("a", &"duel", GSMmRating.of(1500.0, 80.0), {"eu": 30}, t0))
+	q.add(GSMmTicket.solo("b", &"duel", GSMmRating.of(1550.0, 80.0), {"eu": 40}, t0 + 1.0))
 	var found := q.form(t0 + 1.0)
 	_check(found.size() == 1, "two close players in one region are matched at once")
 	_check(q.size() == 0, "and leave the queue")
-	_check((found[0] as DotMmMatch).region == "eu", "in the region they share")
+	_check((found[0] as GSMmMatch).region == "eu", "in the region they share")
 
-	q.add(DotMmTicket.solo("c", &"duel", DotMmRating.of(1500.0, 80.0), {"eu": 30}, t0))
-	q.add(DotMmTicket.solo("d", &"duel", DotMmRating.of(1900.0, 80.0), {"eu": 30}, t0))
+	q.add(GSMmTicket.solo("c", &"duel", GSMmRating.of(1500.0, 80.0), {"eu": 30}, t0))
+	q.add(GSMmTicket.solo("d", &"duel", GSMmRating.of(1900.0, 80.0), {"eu": 30}, t0))
 	_check(q.form(t0).is_empty(), "400 apart is not a match at first")
 	_check(q.form(t0 + 20.0).is_empty(), "nor after twenty seconds (the window is 300)")
 	_check(q.form(t0 + 31.0).size() == 1, "and is after thirty-one, when the window passes 400")
 
 	# Latency: somebody far from every region the other can use is never matched with them.
-	q.add(DotMmTicket.solo("e", &"duel", DotMmRating.new(), {"eu": 30, "na": 150}, t0))
-	q.add(DotMmTicket.solo("f", &"duel", DotMmRating.new(), {"na": 25}, t0))
+	q.add(GSMmTicket.solo("e", &"duel", GSMmRating.new(), {"eu": 30, "na": 150}, t0))
+	q.add(GSMmTicket.solo("f", &"duel", GSMmRating.new(), {"na": 25}, t0))
 	_check(q.form(t0 + 1.0).is_empty(), "two players with no region both reach are not matched")
 	var late := q.form(t0 + 60.0)
-	_check(late.size() == 1 and (late[0] as DotMmMatch).region == "na", "until the anchor's ceiling has grown to cover the other's region")
+	_check(late.size() == 1 and (late[0] as GSMmMatch).region == "na", "until the anchor's ceiling has grown to cover the other's region")
 
 	# A candidate is judged against ITS OWN latency ceiling, not the anchor's.
-	var q2 := DotMmQueue.new(duel)
-	q2.add(DotMmTicket.solo("old", &"duel", DotMmRating.new(), {"eu": 150}, t0))
-	q2.add(DotMmTicket.solo("new", &"duel", DotMmRating.new(), {"eu": 150}, t0 + 99.0))
+	var q2 := GSMmQueue.new(duel)
+	q2.add(GSMmTicket.solo("old", &"duel", GSMmRating.new(), {"eu": 150}, t0))
+	q2.add(GSMmTicket.solo("new", &"duel", GSMmRating.new(), {"eu": 150}, t0 + 99.0))
 	_check(q2.form(t0 + 100.0).is_empty(), "a long wait does not hand a newcomer a latency they never accepted")
 
-	var five := DotMmPlaylist.of(&"five", 2, 3)
+	var five := GSMmPlaylist.of(&"five", 2, 3)
 	five.min_quality = 0.0
-	var q3 := DotMmQueue.new(five)
+	var q3 := GSMmQueue.new(five)
 	var trio := [
-		{"id": "p1", "rating": DotMmRating.new()},
-		{"id": "p2", "rating": DotMmRating.new()},
-		{"id": "p3", "rating": DotMmRating.new()},
+		{"id": "p1", "rating": GSMmRating.new()},
+		{"id": "p2", "rating": GSMmRating.new()},
+		{"id": "p3", "rating": GSMmRating.new()},
 	]
-	q3.add(DotMmTicket.party("party", &"five", trio, [{"eu": 20}, {"eu": 20}, {"eu": 20}], t0))
+	q3.add(GSMmTicket.party("party", &"five", trio, [{"eu": 20}, {"eu": 20}, {"eu": 20}], t0))
 	for n in ["s1", "s2", "s3"]:
-		q3.add(DotMmTicket.solo(n, &"five", DotMmRating.new(), {"eu": 20}, t0))
+		q3.add(GSMmTicket.solo(n, &"five", GSMmRating.new(), {"eu": 20}, t0))
 	var m3: Array = q3.form(t0)
 	_check(m3.size() == 1, "a party of three and three solos make a three-a-side")
 	var side_with_party := -1
-	var roster: Array = (m3[0] as DotMmMatch).roster()
+	var roster: Array = (m3[0] as GSMmMatch).roster()
 	for i in range(roster.size()):
 		if (roster[i] as Array).has("p1"):
 			side_with_party = i
 	var together: Array = roster[side_with_party]
 	_check(together.has("p2") and together.has("p3"), "with the party on one side, together")
 
-	var too_big := DotMmTicket.party("big", &"five", [
-		{"id": "x1", "rating": DotMmRating.new()},
-		{"id": "x2", "rating": DotMmRating.new()},
-		{"id": "x3", "rating": DotMmRating.new()},
-		{"id": "x4", "rating": DotMmRating.new()},
+	var too_big := GSMmTicket.party("big", &"five", [
+		{"id": "x1", "rating": GSMmRating.new()},
+		{"id": "x2", "rating": GSMmRating.new()},
+		{"id": "x3", "rating": GSMmRating.new()},
+		{"id": "x4", "rating": GSMmRating.new()},
 	], [{"eu": 1}, {"eu": 1}, {"eu": 1}, {"eu": 1}], t0)
 	_check(not q3.add(too_big).ok, "a party bigger than a side is refused at the door")
 
-	var q4 := DotMmQueue.new(duel)
-	q4.add(DotMmTicket.solo("dup", &"duel", DotMmRating.new(), {"eu": 1}, t0))
-	var twice := DotMmTicket.party("dup2", &"duel", [{"id": "dup", "rating": DotMmRating.new()}], [{"eu": 1}], t0)
+	var q4 := GSMmQueue.new(duel)
+	q4.add(GSMmTicket.solo("dup", &"duel", GSMmRating.new(), {"eu": 1}, t0))
+	var twice := GSMmTicket.party("dup2", &"duel", [{"id": "dup", "rating": GSMmRating.new()}], [{"eu": 1}], t0)
 	_check(not q4.add(twice).ok, "and one person cannot be in a queue twice")
 
-	var worst := DotMmTicket.worst_latencies([{"eu": 20, "na": 90}, {"eu": 60}])
+	var worst := GSMmTicket.worst_latencies([{"eu": 20, "na": 90}, {"eu": 60}])
 	_check(worst.size() == 1 and float(worst["eu"]) == 60.0, "a party's latency is its worst member's, in regions everyone reaches")
 
 
@@ -285,16 +285,16 @@ func _test_queue() -> void:
 func _test_nobody_starves() -> void:
 	_section("The windows widen, so the lonely edge of the ladder is served")
 
-	var pl := DotMmPlaylist.of(&"ranked", 2, 1)
+	var pl := GSMmPlaylist.of(&"ranked", 2, 1)
 	pl.skill_window = 50.0
 	pl.skill_window_growth = 5.0
 	pl.skill_window_max = 800.0
 	pl.min_quality = 0.9
 	pl.min_quality_decay = 0.01
-	var q := DotMmQueue.new(pl)
+	var q := GSMmQueue.new(pl)
 	var t0 := 5000.0
-	q.add(DotMmTicket.solo("top", &"ranked", DotMmRating.of(2400.0, 40.0), {"eu": 10}, t0))
-	q.add(DotMmTicket.solo("next", &"ranked", DotMmRating.of(2000.0, 40.0), {"eu": 10}, t0 + 5.0))
+	q.add(GSMmTicket.solo("top", &"ranked", GSMmRating.of(2400.0, 40.0), {"eu": 10}, t0))
+	q.add(GSMmTicket.solo("next", &"ranked", GSMmRating.of(2000.0, 40.0), {"eu": 10}, t0 + 5.0))
 
 	var matched_at := -1.0
 	for s in range(0, 300, 5):
@@ -322,21 +322,21 @@ func _test_accept_step() -> void:
 	var found: Array = []
 	var ready: Array = []
 	var cancelled: Array = []
-	mm.match_found.connect(func(m: DotMmMatch, _d: float) -> void: found.append(m))
-	mm.match_ready.connect(func(m: DotMmMatch) -> void: ready.append(m))
-	mm.match_cancelled.connect(func(m: DotMmMatch, r: String, back: PackedStringArray) -> void: cancelled.append([m, r, back]))
+	mm.match_found.connect(func(m: GSMmMatch, _d: float) -> void: found.append(m))
+	mm.match_ready.connect(func(m: GSMmMatch) -> void: ready.append(m))
+	mm.match_cancelled.connect(func(m: GSMmMatch, r: String, back: PackedStringArray) -> void: cancelled.append([m, r, back]))
 
 	mm.enqueue("t1", &"duel", PackedStringArray(["one"]), [{"eu": 20}])
 	mm.enqueue("t2", &"duel", PackedStringArray(["two"]), [{"eu": 20}])
 	mm.run_pass()
 	_check(found.size() == 1 and mm.pending_count() == 1, "a found match waits for everybody to accept")
-	var m: DotMmMatch = found[0]
+	var m: GSMmMatch = found[0]
 	mm.accept(m.id, "one")
 	_check(ready.is_empty(), "one acceptance is not enough")
 	mm.accept(m.id, "two")
 	await get_tree().process_frame
 	_check(ready.size() == 1, "two is")
-	_check(str((ready[0] as DotMmMatch).allocation.get("address", "")) == "10.0.0.1:27015", "and the match was placed on the free server")
+	_check(str((ready[0] as GSMmMatch).allocation.get("address", "")) == "10.0.0.1:27015", "and the match was placed on the free server")
 
 	# Decline: the decliner is cooled down and the other goes back in at their old time.
 	_now[0] += 10.0
@@ -345,19 +345,19 @@ func _test_accept_step() -> void:
 	mm.enqueue("t4", &"duel", PackedStringArray(["four"]), [{"eu": 20}])
 	var enqueued_three := mm.queue_for(&"duel").get_ticket("t3").enqueued_at
 	mm.run_pass()
-	var m2: DotMmMatch = found[1]
+	var m2: GSMmMatch = found[1]
 	mm.decline(m2.id, "four")
 	_check(cancelled.size() == 1, "a decline cancels the match")
 	_check((cancelled[0][2] as PackedStringArray).has("t3"), "the one who did nothing wrong is requeued")
 	_check(mm.queue_for(&"duel").get_ticket("t3").enqueued_at == enqueued_three, "at the time they first queued, not now")
 	var again := mm.enqueue("t4b", &"duel", PackedStringArray(["four"]), [{"eu": 20}])
-	_check(not again.ok and again.error.code == DotError.CODE_RATE_LIMITED, "the decliner is kept out for a while")
+	_check(not again.ok and again.error.code == GSError.CODE_RATE_LIMITED, "the decliner is kept out for a while")
 	_check(again.error.retry_after > 0.0, "and told for how long")
 
 	# Nobody answering is the same as declining, for whoever did not answer.
 	mm.enqueue("t5", &"duel", PackedStringArray(["five"]), [{"eu": 20}])
 	mm.run_pass()
-	var m3: DotMmMatch = found[2]
+	var m3: GSMmMatch = found[2]
 	mm.accept(m3.id, "three")
 	_now[0] += 60.0
 	mm.run_pass()
@@ -365,11 +365,11 @@ func _test_accept_step() -> void:
 	_check((cancelled[1][2] as PackedStringArray).has("t3"), "and returns whoever did accept")
 
 	# No free server: nobody is punished, everybody goes back.
-	var alloc: DotMmAllocatorList = mm.allocator
+	var alloc: GSMmAllocatorList = mm.allocator
 	_check(alloc.free_count("eu") == 0, "the only server is busy with the first match")
 	mm.enqueue("t6", &"duel", PackedStringArray(["six"]), [{"eu": 20}])
 	mm.run_pass()
-	var m4: DotMmMatch = found[found.size() - 1]
+	var m4: GSMmMatch = found[found.size() - 1]
 	for pid in m4.player_ids():
 		mm.accept(m4.id, pid)
 	await get_tree().process_frame
@@ -381,13 +381,13 @@ func _test_accept_step() -> void:
 
 
 ## A ticket is queued by id at the stored rating, once, and max_tickets caps the queue (0 = unlimited).
-func _accept_queue_limits(mm: DotMatchmaker) -> void:
-	mm.store.put("rich", &"duel", DotMmRating.of(2500.0, 40.0))
+func _accept_queue_limits(mm: GSMatchmaker) -> void:
+	mm.store.put("rich", &"duel", GSMmRating.of(2500.0, 40.0))
 
 	var ok := mm.enqueue("t-rich", &"duel", PackedStringArray(["rich"]), [{"eu": 20}])
 	_check(ok.ok, "a player is queued by id")
-	var t: DotMmTicket = ok.value
-	_check(((t.members[0] as Dictionary)["rating"] as DotMmRating).rating == 2500.0, "at the rating the store holds, not one anybody sent")
+	var t: GSMmTicket = ok.value
+	_check(((t.members[0] as Dictionary)["rating"] as GSMmRating).rating == 2500.0, "at the rating the store holds, not one anybody sent")
 	_check(not mm.enqueue("t-rich2", &"duel", PackedStringArray(["rich"]), [{"eu": 20}]).ok, "and cannot queue twice")
 	_check(mm.cancel("t-rich"), "a ticket can be cancelled")
 
@@ -416,7 +416,7 @@ func _test_results() -> void:
 	_check(mm.store.fetch("w", &"duel").games == 1, "and both have a game")
 	_check(mm.store.fetch("w", &"duel").last_played == int(_now[0]), "stamped with when it was played")
 
-	var team := DotMmPlaylist.of(&"team", 2, 2)
+	var team := GSMmPlaylist.of(&"team", 2, 2)
 	mm.add_playlist(team)
 	var quit := mm.report_result(&"team", [["a1", "a2"], ["b1", "b2"]], [1, 2], {}, PackedStringArray(["a2"]))
 	_check(quit.ok, "a result with a leaver is filed")
@@ -426,7 +426,7 @@ func _test_results() -> void:
 	var late := mm.report_result(&"team", [["c1", "c2"], ["d1", "d2"]], [1, 2], {"c2": 0.1})
 	_check(late.ok and not mm.store.has_rating("c2", &"team"), "ten per cent of a match is not rated at all")
 
-	var casual := DotMmPlaylist.of(&"casual", 2, 1)
+	var casual := GSMmPlaylist.of(&"casual", 2, 1)
 	casual.ranked = false
 	mm.add_playlist(casual)
 	var none := mm.report_result(&"casual", [["x"], ["y"]], [1, 2])
@@ -434,11 +434,11 @@ func _test_results() -> void:
 
 	# A rating file survives a round trip and refuses to half-load.
 	var path := "user://mm_selftest/ratings.json"
-	var file := DotMmRatingStoreFile.new(path)
-	file.put("z", &"duel", DotMmRating.of(1700.0, 90.0))
-	var back := DotMmRatingStoreFile.new(path)
+	var file := GSMmRatingStoreFile.new(path)
+	file.put("z", &"duel", GSMmRating.of(1700.0, 90.0))
+	var back := GSMmRatingStoreFile.new(path)
 	_check(back.open().ok and back.fetch("z", &"duel").rating == 1700.0, "a rating file round-trips")
-	var poisoned := DotMmRatingStore.new()
+	var poisoned := GSMmRatingStore.new()
 	var loaded := poisoned.load_dict({"duel|ok": {"rating": 1500.0}, "duel|bad": {"rating": INF}})
 	_check(not loaded.ok and poisoned.count() == 0, "one poisoned entry refuses the whole load")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
@@ -451,36 +451,36 @@ class FakeBackbone:
 	extends RefCounted
 	var posts: Array = []
 	var status: int = 200
-	## What a failing answer's body was; DotHttp keeps it as the error's detail.
+	## What a failing answer's body was; GSHttp keeps it as the error's detail.
 	var fail_body: String = "{}"
 	var answer: Dictionary = {}
 	## Answers to give first, one per post, each [status, body]; then [member status].
 	var script_answers: Array = []
 
-	func post_integration(path: String, body: Dictionary) -> DotResult:
+	func post_integration(path: String, body: Dictionary) -> GSResult:
 		posts.append([path, body.duplicate(true)])
 		if not script_answers.is_empty():
 			var a: Array = script_answers.pop_front()
 			if int(a[0]) != 200:
-				return DotResult.failure(DotError.from_http(int(a[0]), str(a[1])))
-			return DotResult.success(answer)
+				return GSResult.failure(GSError.from_http(int(a[0]), str(a[1])))
+			return GSResult.success(answer)
 		if status != 200:
-			return DotResult.failure(DotError.from_http(status, fail_body))
-		return DotResult.success(answer)
+			return GSResult.failure(GSError.from_http(status, fail_body))
+		return GSResult.success(answer)
 
-	func get_integration(path: String, query: Dictionary = {}) -> DotResult:
+	func get_integration(path: String, query: Dictionary = {}) -> GSResult:
 		posts.append([path, query])
 		if status != 200:
-			return DotResult.failure(DotError.from_http(status, fail_body))
-		return DotResult.success(answer)
+			return GSResult.failure(GSError.from_http(status, fail_body))
+		return GSResult.success(answer)
 
 
 func _test_backbone() -> void:
 	_section("The backbone rates; the game files results and stores the answer")
 
 	var fake := FakeBackbone.new()
-	var store := DotMmRatingStore.new()
-	var bb := DotMmBackbone.new(fake, store)
+	var store := GSMmRatingStore.new()
+	var bb := GSMmBackbone.new(fake, store)
 
 	var refused := await bb.submit(&"duel", "m1", [["backbone:clx123"], ["k2"]], [1, 2])
 	_check(not refused.ok and fake.posts.is_empty(), "an account id is refused before anything is sent")
@@ -489,7 +489,7 @@ func _test_backbone() -> void:
 	var sent := await bb.submit(&"duel", "m2", [["k1"], ["k2"]], [1, 2], {"k2": 0.5}, PackedStringArray(["k2"]))
 	_check(sent.ok, "a result is filed")
 	var body: Dictionary = fake.posts[0][1]
-	_check(str(fake.posts[0][0]) == DotMmBackbone.SUBMIT_PATH, "to the submit route")
+	_check(str(fake.posts[0][0]) == GSMmBackbone.SUBMIT_PATH, "to the submit route")
 	_check(((body["sides"] as Array)[1] as Array)[0]["leaver"] == true, "carrying the leaver")
 	_check(not body.has("rating"), "and no rating at all: the site computes it")
 	_check(store.fetch("k1", &"duel").rating == 1520.0, "the site's answer is stored")
@@ -518,8 +518,8 @@ func _test_backbone() -> void:
 	fake.posts.clear()
 	var many := []
 	for i in range(30):
-		many.append(DotMmPlaylist.of(StringName("q%d" % i), 2, 1))
-	(many[0] as DotMmPlaylist).display_name = ""
+		many.append(GSMmPlaylist.of(StringName("q%d" % i), 2, 1))
+	(many[0] as GSMmPlaylist).display_name = ""
 	await bb.define(many)
 	var first_define: Dictionary = fake.posts[0][1]
 	_check(fake.posts.size() == 2 and (first_define["playlists"] as Array).size() == 25, "thirty queues are declared twenty-five at a time")
@@ -538,18 +538,18 @@ func _test_site_rules() -> void:
 	_section("What the site would refuse is refused here, with the reason")
 
 	# Playlist ids: website-city IdentifierText, plus this addon's lowercase.
-	_check(not DotMmPlaylist.of(&"ranked/5", 2, 5).validate().ok, "a playlist id with a slash is refused")
-	_check(not DotMmPlaylist.of(&"-duel", 2, 1).validate().ok, "and one that starts with a hyphen")
-	_check(not DotMmPlaylist.of(StringName("q".repeat(65)), 2, 1).validate().ok, "and one of 65 characters")
-	_check(DotMmPlaylist.of(&"ranked.5v5:eu-1", 2, 5).validate().ok, "while dot, colon, hyphen and digits pass")
+	_check(not GSMmPlaylist.of(&"ranked/5", 2, 5).validate().ok, "a playlist id with a slash is refused")
+	_check(not GSMmPlaylist.of(&"-duel", 2, 1).validate().ok, "and one that starts with a hyphen")
+	_check(not GSMmPlaylist.of(StringName("q".repeat(65)), 2, 1).validate().ok, "and one of 65 characters")
+	_check(GSMmPlaylist.of(&"ranked.5v5:eu-1", 2, 5).validate().ok, "while dot, colon, hyphen and digits pass")
 
 	var fake := FakeBackbone.new()
-	var bb := DotMmBackbone.new(fake, DotMmRatingStore.new())
-	var bad_id := DotMmPlaylist.of(&"duel", 2, 1)
+	var bb := GSMmBackbone.new(fake, GSMmRatingStore.new())
+	var bad_id := GSMmPlaylist.of(&"duel", 2, 1)
 	bad_id.id = &"duel/eu"
-	var r := await bb.define([DotMmPlaylist.of(&"ok", 2, 1), bad_id])
+	var r := await bb.define([GSMmPlaylist.of(&"ok", 2, 1), bad_id])
 	_check(not r.ok and fake.posts.is_empty(), "define with one bad id sends nothing")
-	var long_name := DotMmPlaylist.of(&"duel", 2, 1)
+	var long_name := GSMmPlaylist.of(&"duel", 2, 1)
 	long_name.display_name = "n".repeat(121)
 	r = await bb.define([long_name])
 	_check(not r.ok and fake.posts.is_empty() and r.error.message.contains("display name"), "nor with a 121-character name, and says which")
@@ -598,18 +598,18 @@ func _test_site_rules() -> void:
 
 	# A result filed before its queue is declared: declare it, file again, once.
 	var undeclared := '{"error":"No playlist \\"duel\\" — declare it with rating/define first."}'
-	var rules := DotMatchmakingConfig.new()
+	var rules := GSMatchmakingConfig.new()
 	rules.tau = 0.7
 	var rb := FakeBackbone.new()
-	var rstore := DotMmRatingStore.new()
-	var rbb := DotMmBackbone.new(rb, rstore)
+	var rstore := GSMmRatingStore.new()
+	var rbb := GSMmBackbone.new(rb, rstore)
 	rb.answer = {"ok": true, "ratings": {"k1": {"rating": 1530.0, "deviation": 170.0, "volatility": 0.06, "games": 1}}}
-	await rbb.define([DotMmPlaylist.of(&"duel", 2, 1)], rules)
+	await rbb.define([GSMmPlaylist.of(&"duel", 2, 1)], rules)
 	rb.posts.clear()
 	rb.script_answers = [[404, undeclared]]
 	r = await rbb.submit(&"duel", "m-early", [["k1"], ["k2"]], [1, 2])
 	var paths := rb.posts.map(func(p: Array) -> String: return str(p[0]))
-	_check(r.ok and paths == [DotMmBackbone.SUBMIT_PATH, DotMmBackbone.DEFINE_PATH, DotMmBackbone.SUBMIT_PATH],
+	_check(r.ok and paths == [GSMmBackbone.SUBMIT_PATH, GSMmBackbone.DEFINE_PATH, GSMmBackbone.SUBMIT_PATH],
 		"a 404 for an undeclared queue declares it and files the result again")
 	_check(rstore.fetch("k1", &"duel").rating == 1530.0 and rbb.pending_count() == 0, "and the retried result's ratings are stored")
 	var redefined: Dictionary = (rb.posts[1][1].get("playlists", [{}]) as Array)[0] if rb.posts.size() > 1 else {}
@@ -647,12 +647,12 @@ func _test_site_rules() -> void:
 	rb.script_answers = [[400, '{"error":"Invalid payload."}']]
 	var warned_before: Array = []
 	var catch_warn := func(rec: Dictionary) -> void:
-		if int(rec["level"]) == DotLog.Level.WARN and str(rec["channel"]) == DotMmBackbone.CHANNEL:
+		if int(rec["level"]) == GSLog.Level.WARN and str(rec["channel"]) == GSMmBackbone.CHANNEL:
 			warned_before.append(rec)
-	DotLog.add_sink(catch_warn)
-	DotLog.set_channel_level(DotMmBackbone.CHANNEL, DotLog.Level.WARN)
-	var quiet := DotLog.print_to_stdout
-	DotLog.print_to_stdout = false
+	GSLog.add_sink(catch_warn)
+	GSLog.set_channel_level(GSMmBackbone.CHANNEL, GSLog.Level.WARN)
+	var quiet := GSLog.print_to_stdout
+	GSLog.print_to_stdout = false
 	r = await rbb.flush()
 	_check(r.ok and int(r.value) == 1 and rbb.pending_count() == 0 and rbb.refused == 1 and rb.posts.size() == 2,
 		"a kept result the site refuses is let go, and the one behind it is sent")
@@ -662,9 +662,9 @@ func _test_site_rules() -> void:
 	rb.script_answers = [[404, undeclared], [200, ""], [404, undeclared]]
 	r = await rbb.flush()
 	_check(r.ok and rbb.pending_count() == 0 and rbb.refused == 2, "as is one whose queue the site still lacks after declaring it")
-	DotLog.print_to_stdout = quiet
-	DotLog.clear_channel_level(DotMmBackbone.CHANNEL)
-	DotLog.remove_sink(catch_warn)
+	GSLog.print_to_stdout = quiet
+	GSLog.clear_channel_level(GSMmBackbone.CHANNEL)
+	GSLog.remove_sink(catch_warn)
 	rb.script_answers = [[503, ""]]
 	await rbb.submit(&"duel", "m-d", pair, [1, 2])
 	rb.script_answers = [[403, '{"error":"Missing scope."}']]
@@ -675,31 +675,31 @@ func _test_site_rules() -> void:
 	_check(not r.ok and rbb.pending_count() == 1, "and so does a site without the routes")
 	r = await rbb.flush()
 	_check(r.ok and rbb.pending_count() == 0, "which then goes")
-	_check(DotMmBackbone.is_refused(DotResult.failure(DotError.from_http(422, ""))) and not DotMmBackbone.is_refused(DotResult.failure(DotError.from_http(429, "")))
-		and not DotMmBackbone.is_refused(DotResult.failure(DotError.from_http(503, ""))), "refused is a 4xx about the body, not a 429 or a 5xx")
+	_check(GSMmBackbone.is_refused(GSResult.failure(GSError.from_http(422, ""))) and not GSMmBackbone.is_refused(GSResult.failure(GSError.from_http(429, "")))
+		and not GSMmBackbone.is_refused(GSResult.failure(GSError.from_http(503, ""))), "refused is a 4xx about the body, not a 429 or a 5xx")
 
 	# Rating rules: sent with the declaration, so the site rates as this config does.
-	var cfg := DotMatchmakingConfig.new()
-	_check(DotMmBackbone.parity_gaps(cfg).is_empty(), "the default config is the site's default")
+	var cfg := GSMatchmakingConfig.new()
+	_check(GSMmBackbone.parity_gaps(cfg).is_empty(), "the default config is the site's default")
 	cfg.tau = 0.7
 	cfg.inactivity_period_days = 30.0
 	cfg.min_participation = 0.5
 	cfg.leaver_takes_loss = false
-	_check(DotMmBackbone.parity_gaps(cfg).size() == 4, "and all four differences from it are named")
+	_check(GSMmBackbone.parity_gaps(cfg).size() == 4, "and all four differences from it are named")
 	var warned: Array = []
 	var sink := func(rec: Dictionary) -> void:
-		if int(rec["level"]) == DotLog.Level.WARN and str(rec["channel"]) == DotMmBackbone.CHANNEL:
+		if int(rec["level"]) == GSLog.Level.WARN and str(rec["channel"]) == GSMmBackbone.CHANNEL:
 			warned.append(rec)
-	DotLog.add_sink(sink)
-	DotLog.set_channel_level(DotMmBackbone.CHANNEL, DotLog.Level.WARN)
-	var old_stdout := DotLog.print_to_stdout
-	DotLog.print_to_stdout = false
+	GSLog.add_sink(sink)
+	GSLog.set_channel_level(GSMmBackbone.CHANNEL, GSLog.Level.WARN)
+	var old_stdout := GSLog.print_to_stdout
+	GSLog.print_to_stdout = false
 	fake.posts.clear()
-	await bb.define([DotMmPlaylist.of(&"duel", 2, 1)], cfg)
-	await bb.define([DotMmPlaylist.of(&"duel", 2, 1)])
-	DotLog.print_to_stdout = old_stdout
-	DotLog.clear_channel_level(DotMmBackbone.CHANNEL)
-	DotLog.remove_sink(sink)
+	await bb.define([GSMmPlaylist.of(&"duel", 2, 1)], cfg)
+	await bb.define([GSMmPlaylist.of(&"duel", 2, 1)])
+	GSLog.print_to_stdout = old_stdout
+	GSLog.clear_channel_level(GSMmBackbone.CHANNEL)
+	GSLog.remove_sink(sink)
 	var sent_row: Dictionary = (fake.posts[0][1]["playlists"] as Array)[0]
 	_check(fake.posts.size() == 2 and is_equal_approx(float(sent_row.get("tau", 0.0)), 0.7)
 		and is_equal_approx(float(sent_row.get("ratingPeriodDays", 0.0)), 30.0)
@@ -711,22 +711,22 @@ func _test_site_rules() -> void:
 	_check(not bare_row.has("tau") and bare_row.size() == 7, "with no config it sends none, and the site keeps what it has")
 	fake.posts.clear()
 	cfg.tau = 4.0
-	r = await bb.define([DotMmPlaylist.of(&"duel", 2, 1)], cfg)
+	r = await bb.define([GSMmPlaylist.of(&"duel", 2, 1)], cfg)
 	_check(not r.ok and fake.posts.is_empty() and r.error.message.contains("tau"), "a rule outside the site's bounds is refused here, naming it")
 
 
 # --- helpers ------------------------------------------------------------------
 
-func _matchmaker() -> DotMatchmaker:
-	var mm := DotMatchmaker.new()
-	mm.store = DotMmRatingStore.new()
+func _matchmaker() -> GSMatchmaker:
+	var mm := GSMatchmaker.new()
+	mm.store = GSMmRatingStore.new()
 	mm.clock_fn = func() -> float: return _now[0]
-	var duel := DotMmPlaylist.of(&"duel", 2, 1)
+	var duel := GSMmPlaylist.of(&"duel", 2, 1)
 	duel.min_quality = 0.0
 	duel.accept_timeout_sec = 20.0
 	duel.decline_cooldown_sec = 120.0
 	mm.playlists = [duel]
-	var alloc := DotMmAllocatorList.new()
+	var alloc := GSMmAllocatorList.new()
 	alloc.add_server("s1", "10.0.0.1:27015", "eu")
 	mm.allocator = alloc
 	add_child(mm)

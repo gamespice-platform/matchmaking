@@ -1,4 +1,4 @@
-class_name DotMmQueue
+class_name GSMmQueue
 extends RefCounted
 
 ## One playlist's queue, and the pure function that turns waiting tickets into matches.
@@ -26,19 +26,19 @@ extends RefCounted
 ## minute in a millisecond.
 
 # No log channel: a pure function of the tickets and [code]now[/code], run every pass.
-# DotMatchmaker logs what comes out of it -- queued, match found, fell through.
+# GSMatchmaker logs what comes out of it -- queued, match found, fell through.
 
-## Default for [member DotMmPlaylist.search_budget]: subsets tried per anchor before giving
+## Default for [member GSMmPlaylist.search_budget]: subsets tried per anchor before giving
 ## up on it for this pass.
 const SEARCH_BUDGET := 4000
 
-## Searches that ran out of [member DotMmPlaylist.search_budget] (cumulative). DotMatchmaker
+## Searches that ran out of [member GSMmPlaylist.search_budget] (cumulative). GSMatchmaker
 ## warns when it moves, so an anchor left waiting by the budget is never silent.
 var budget_exhausted: int = 0
 
-var playlist: DotMmPlaylist = null
+var playlist: GSMmPlaylist = null
 
-## ticket id -> DotMmTicket
+## ticket id -> GSMmTicket
 var _tickets: Dictionary = {}
 
 ## player id -> ticket id, so nobody is in one queue twice.
@@ -47,20 +47,20 @@ var _players: Dictionary = {}
 var _formed: int = 0
 
 
-func _init(p_playlist: DotMmPlaylist = null) -> void:
+func _init(p_playlist: GSMmPlaylist = null) -> void:
 	playlist = p_playlist
 
 
-func add(ticket: DotMmTicket) -> DotResult:
+func add(ticket: GSMmTicket) -> GSResult:
 	var ok := ticket.validate(playlist)
 	if not ok.ok:
 		return ok
 	if _tickets.has(ticket.id):
-		return DotResult.fail(DotError.CODE_CONFLICT, "That ticket is already queued.", ticket.id)
+		return GSResult.fail(GSError.CODE_CONFLICT, "That ticket is already queued.", ticket.id)
 	for pid in ticket.member_ids():
 		if _players.has(pid):
-			return DotResult.fail(
-				DotError.CODE_CONFLICT,
+			return GSResult.fail(
+				GSError.CODE_CONFLICT,
 				"Somebody on this ticket is already in the queue.",
 				"%s is on %s" % [pid, _players[pid]]
 			)
@@ -68,11 +68,11 @@ func add(ticket: DotMmTicket) -> DotResult:
 	_tickets[ticket.id] = ticket
 	for pid in ticket.member_ids():
 		_players[pid] = ticket.id
-	return DotResult.success(ticket)
+	return GSResult.success(ticket)
 
 
-func remove(ticket_id: String) -> DotMmTicket:
-	var t: DotMmTicket = _tickets.get(ticket_id)
+func remove(ticket_id: String) -> GSMmTicket:
+	var t: GSMmTicket = _tickets.get(ticket_id)
 	if t == null:
 		return null
 	_tickets.erase(ticket_id)
@@ -82,7 +82,7 @@ func remove(ticket_id: String) -> DotMmTicket:
 	return t
 
 
-func get_ticket(ticket_id: String) -> DotMmTicket:
+func get_ticket(ticket_id: String) -> GSMmTicket:
 	return _tickets.get(ticket_id)
 
 
@@ -101,7 +101,7 @@ func players() -> int:
 ## Every ticket, oldest first. Ties by id so the order is total.
 func ordered() -> Array:
 	var out := _tickets.values()
-	out.sort_custom(func(a: DotMmTicket, b: DotMmTicket) -> bool:
+	out.sort_custom(func(a: GSMmTicket, b: GSMmTicket) -> bool:
 		if a.enqueued_at != b.enqueued_at:
 			return a.enqueued_at < b.enqueued_at
 		return a.id < b.id
@@ -116,19 +116,19 @@ func form(now: float) -> Array:
 	var order := ordered()
 
 	for anchor_v in order:
-		var anchor: DotMmTicket = anchor_v
+		var anchor: GSMmTicket = anchor_v
 		if consumed.has(anchor.id):
 			continue
 		var m := _build_around(anchor, order, consumed, now)
 		if m == null:
 			continue
 		for t in m.tickets():
-			consumed[(t as DotMmTicket).id] = true
+			consumed[(t as GSMmTicket).id] = true
 		out.append(m)
 
 	for m in out:
-		for t in (m as DotMmMatch).tickets():
-			remove((t as DotMmTicket).id)
+		for t in (m as GSMmMatch).tickets():
+			remove((t as GSMmTicket).id)
 	_formed += out.size()
 	return out
 
@@ -138,10 +138,10 @@ func oldest_wait(now: float) -> float:
 	var order := ordered()
 	if order.is_empty():
 		return 0.0
-	return (order[0] as DotMmTicket).waited(now)
+	return (order[0] as GSMmTicket).waited(now)
 
 
-func _build_around(anchor: DotMmTicket, order: Array, consumed: Dictionary, now: float) -> DotMmMatch:
+func _build_around(anchor: GSMmTicket, order: Array, consumed: Dictionary, now: float) -> GSMmMatch:
 	var pl := playlist
 	var waited := anchor.waited(now)
 	var window := pl.window_after(waited)
@@ -152,7 +152,7 @@ func _build_around(anchor: DotMmTicket, order: Array, consumed: Dictionary, now:
 	for region in _regions_for(anchor, now):
 		var pool := []
 		for t_v in order:
-			var t: DotMmTicket = t_v
+			var t: GSMmTicket = t_v
 			if t == anchor or consumed.has(t.id):
 				continue
 			if not t.latencies.has(region):
@@ -164,7 +164,7 @@ func _build_around(anchor: DotMmTicket, order: Array, consumed: Dictionary, now:
 				continue
 			pool.append(t)
 
-		pool.sort_custom(func(a: DotMmTicket, b: DotMmTicket) -> bool:
+		pool.sort_custom(func(a: GSMmTicket, b: GSMmTicket) -> bool:
 			var da := absf(a.matching_rating(pl.party_skill_blend, pl.premade_bonus) - anchor_r)
 			var db := absf(b.matching_rating(pl.party_skill_blend, pl.premade_bonus) - anchor_r)
 			if da != db:
@@ -187,8 +187,8 @@ func _build_around(anchor: DotMmTicket, order: Array, consumed: Dictionary, now:
 		found.window = window
 		found.formed_at = now
 		for t in found.tickets():
-			found.longest_wait = maxf(found.longest_wait, (t as DotMmTicket).waited(now))
-		found.id = DotHash.sha256_text(",".join(found.ticket_ids()) + "@" + str(now)).substr(0, 16)
+			found.longest_wait = maxf(found.longest_wait, (t as GSMmTicket).waited(now))
+		found.id = GSHash.sha256_text(",".join(found.ticket_ids()) + "@" + str(now)).substr(0, 16)
 		found.playlist = pl.id
 		return found
 
@@ -196,7 +196,7 @@ func _build_around(anchor: DotMmTicket, order: Array, consumed: Dictionary, now:
 
 
 ## Regions the anchor can play in now, nearest first.
-func _regions_for(anchor: DotMmTicket, now: float) -> Array:
+func _regions_for(anchor: GSMmTicket, now: float) -> Array:
 	var cap := playlist.latency_after(anchor.waited(now))
 	var out := []
 	for region in anchor.latencies:
@@ -214,7 +214,7 @@ func _regions_for(anchor: DotMmTicket, now: float) -> Array:
 
 ## Depth-first over the pool, closest first, for a full set that splits and is fair enough.
 func _search(pool: Array, from: int, chosen: Array, count: int, need: int,
-		quality_floor: float, budget: Array[int]) -> DotMmMatch:
+		quality_floor: float, budget: Array[int]) -> GSMmMatch:
 	if count == need:
 		return _try(chosen, quality_floor)
 	for i in range(from, pool.size()):
@@ -224,7 +224,7 @@ func _search(pool: Array, from: int, chosen: Array, count: int, need: int,
 			budget[0] -= 1
 			if budget[0] == 0:
 				return null
-		var t: DotMmTicket = pool[i]
+		var t: GSMmTicket = pool[i]
 		if count + t.size() > need:
 			continue
 		chosen.append(t)
@@ -235,20 +235,20 @@ func _search(pool: Array, from: int, chosen: Array, count: int, need: int,
 	return null
 
 
-func _try(chosen: Array, quality_floor: float) -> DotMmMatch:
+func _try(chosen: Array, quality_floor: float) -> GSMmMatch:
 	var pl := playlist
 	var sizes := []
 	var strengths := []
 	for t_v in chosen:
-		var t: DotMmTicket = t_v
+		var t: GSMmTicket = t_v
 		sizes.append(t.size())
 		strengths.append(t.matching_rating(pl.party_skill_blend, pl.premade_bonus) * t.size())
 
-	var split := DotMmBalance.split(sizes, strengths, pl.teams, pl.team_size, pl.exhaustive_limit)
+	var split := GSMmBalance.split(sizes, strengths, pl.teams, pl.team_size, pl.exhaustive_limit)
 	if split.is_empty():
 		return null
 
-	var m := DotMmMatch.new()
+	var m := GSMmMatch.new()
 	for side in split:
 		var tickets := []
 		for i in side:
@@ -267,7 +267,7 @@ func _try(chosen: Array, quality_floor: float) -> DotMmMatch:
 ##
 ## Quality compares the strongest side with the weakest, so it means the same thing for
 ## two sides and for eight: how close the most lopsided pairing in the match is to even.
-static func evaluate(sides: Array, pl: DotMmPlaylist) -> Array:
+static func evaluate(sides: Array, pl: GSMmPlaylist) -> Array:
 	var means: Array[float] = []
 	var devs: Array[float] = []
 	for side in sides:
@@ -275,7 +275,7 @@ static func evaluate(sides: Array, pl: DotMmPlaylist) -> Array:
 		var count := 0
 		var dev_sq := 0.0
 		for t_v in side:
-			var t: DotMmTicket = t_v
+			var t: GSMmTicket = t_v
 			total += t.matching_rating(pl.party_skill_blend, pl.premade_bonus) * t.size()
 			count += t.size()
 			dev_sq += t.deviation() * t.deviation() * t.size()
@@ -290,11 +290,11 @@ static func evaluate(sides: Array, pl: DotMmPlaylist) -> Array:
 		if means[i] < means[lo]:
 			lo = i
 
-	var p_extreme := DotMmGlicko2.expected(means[hi], devs[hi], means[lo], devs[lo])
+	var p_extreme := GSMmGlicko2.expected(means[hi], devs[hi], means[lo], devs[lo])
 	var quality := 1.0 - 2.0 * absf(p_extreme - 0.5)
 	var p0 := -1.0
 	if means.size() == 2:
-		p0 = DotMmGlicko2.expected(means[0], devs[0], means[1], devs[1])
+		p0 = GSMmGlicko2.expected(means[0], devs[0], means[1], devs[1])
 	return [p0, quality]
 
 

@@ -1,5 +1,5 @@
-class_name DotMmRatingStoreFile
-extends DotMmRatingStore
+class_name GSMmRatingStoreFile
+extends GSMmRatingStore
 
 ## Ratings in one JSON file, written atomically.
 ##
@@ -18,17 +18,17 @@ func _init(p_path: String = "") -> void:
 		path = p_path
 
 
-func open() -> DotResult:
+func open() -> GSResult:
 	if not FileAccess.file_exists(path):
-		return DotResult.success(0)
+		return GSResult.success(0)
 	var text := FileAccess.get_file_as_string(path)
 	var parsed: Variant = JSON.parse_string(text)
 	if not (parsed is Dictionary):
-		return DotResult.fail(DotError.CODE_PARSE, "The ratings file is not a JSON object.", path)
+		return GSResult.fail(GSError.CODE_PARSE, "The ratings file is not a JSON object.", path)
 	return load_dict(parsed as Dictionary)
 
 
-func put(player_id: String, playlist: StringName, rating: DotMmRating) -> DotResult:
+func put(player_id: String, playlist: StringName, rating: GSMmRating) -> GSResult:
 	var res := super.put(player_id, playlist, rating)
 	if not res.ok:
 		return res
@@ -36,13 +36,13 @@ func put(player_id: String, playlist: StringName, rating: DotMmRating) -> DotRes
 
 
 ## Logged here, because the in-memory rating has already changed by the time this runs
-## and the caller -- DotMatchmaker.report_result -- returns the failure part-way through
+## and the caller -- GSMatchmaker.report_result -- returns the failure part-way through
 ## a match without a line. ERROR: the ratings on disk are now behind the ones in force,
 ## and a restart puts those players back where they were.
-func save() -> DotResult:
+func save() -> GSResult:
 	var res := _write()
 	if not res.ok:
-		DotLog.error(CHANNEL, "ratings were not written", {
+		GSLog.error(CHANNEL, "ratings were not written", {
 			"path": path,
 			"code": res.code(),
 			"error": res.error.message if res.error != null else "",
@@ -50,22 +50,22 @@ func save() -> DotResult:
 	return res
 
 
-func _write() -> DotResult:
+func _write() -> GSResult:
 	var dir := path.get_base_dir()
 	if not DirAccess.dir_exists_absolute(dir):
 		var made := DirAccess.make_dir_recursive_absolute(dir)
 		if made != OK:
-			return DotResult.failure(DotError.from_engine(made, "creating " + dir))
+			return GSResult.failure(GSError.from_engine(made, "creating " + dir))
 
 	var tmp := path + ".tmp"
 	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
-		return DotResult.failure(DotError.from_engine(FileAccess.get_open_error(), tmp))
+		return GSResult.failure(GSError.from_engine(FileAccess.get_open_error(), tmp))
 	f.store_string(JSON.stringify(to_dict(), "\t", true))
 	f.close()
 
 	var moved := DirAccess.rename_absolute(tmp, path)
 	if moved != OK:
-		return DotResult.failure(DotError.from_engine(moved, "replacing " + path))
-	DotWeb.sync_filesystem()
-	return DotResult.success(null)
+		return GSResult.failure(GSError.from_engine(moved, "replacing " + path))
+	GSWeb.sync_filesystem()
+	return GSResult.success(null)
