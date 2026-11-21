@@ -3,9 +3,9 @@ extends Node
 ## The yml layout of GameSpice Matchmaking's settings: new path, flat shim, operator layer.
 ## Run: timeout 120 godot --headless --path . res://examples/cfg_selftest.tscn
 
-const FOLDER := "dot_matchmaking"
+const FOLDER := "gs_matchmaking"
 const FILE := "matchmaking.yml"
-const LEGACY := "user://dot_matchmaking_cfg_selftest_legacy"
+const LEGACY := "user://gs_matchmaking_cfg_selftest_legacy"
 
 const SECTIONS := 1
 const CHECKS := 7
@@ -21,7 +21,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("dot-matchmaking cfg self-test")
+	print("gs-matchmaking cfg self-test")
 	var addon_dir := "user://cfg/addons/" + FOLDER
 	var server_dir := "user://cfg/server/addons/" + FOLDER
 	_clean(addon_dir, server_dir)

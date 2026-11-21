@@ -4,7 +4,7 @@ Why the matchmaker is shaped the way it is, and why the obvious alternative is w
 
 ## What this is the half of
 
-website-city's "matchmaking" is `PartySearch`: it finds a server for a party, loosening the party's criteria one step per pass. The site has no player queue. So this addon is the whole player-queue half. The site does rate: its `rating/*` integration routes run their own Glicko-2 ([contract](backbone-contract.md)), shaped like the `stats/*` routes dot-stats uses.
+website-city's "matchmaking" is `PartySearch`: it finds a server for a party, loosening the party's criteria one step per pass. The site has no player queue. So this addon is the whole player-queue half. The site does rate: its `rating/*` integration routes run their own Glicko-2 ([contract](backbone-contract.md)), shaped like the `stats/*` routes gs-stats uses.
 
 ## The team extension shifts the opponent, not the player
 

@@ -1,6 +1,6 @@
 extends Node
 
-## Exercises dot-matchmaking with no network, no server and no wall clock.
+## Exercises gs-matchmaking with no network, no server and no wall clock.
 ##
 ## [b]The first section is the one to keep.[/b] It checks the rating update against the
 ## worked example printed in Glickman's Glicko-2 paper. A rating system with an arithmetic
@@ -32,7 +32,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	_line("dot-matchmaking self-test")
+	_line("gs-matchmaking self-test")
 	_line("")
 
 	_test_glicko_matches_the_paper()

@@ -4,7 +4,7 @@ Who plays whom: Glicko-2 ratings per queue, a queue whose tolerances widen with 
 
 Read the family [CLAUDE.md](../../CLAUDE.md) first, and [docs/backbone.md](../../docs/backbone.md) for anything that talks to website-city.
 
-**The distributable is `addons/dot_matchmaking/`.** It requires [GameSpice Core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored). dot-auth's `GSBackboneClient` is reached by duck typing (`post_integration`, `get_integration`). dot-server-deploy hosts a `GSMatchmaker` when its matchmaking config enables one.
+**The distributable is `addons/gs_matchmaking/`.** It requires [GameSpice Core](../gs-core) and nothing else (`ln -s ../../gs-core/addons/gs_core addons/gs_core`, gitignored). gs-auth's `GSBackboneClient` is reached by duck typing (`post_integration`, `get_integration`). gs-server-deploy hosts a `GSMatchmaker` when its matchmaking config enables one.
 
 ## Read before
 
@@ -17,21 +17,21 @@ Read the family [CLAUDE.md](../../CLAUDE.md) first, and [docs/backbone.md](../..
 
 | Path | What |
 | --- | --- |
-| `rating/dot_mm_rating.gd` | `GSMmRating`: rating, deviation, volatility, games, last played; `conservative()` is what a board shows |
-| `rating/dot_mm_glicko2.gd` | `GSMmGlicko2`: the update (the paper, step for step), `age()`, `expected()`, `rate_match()` for teams |
-| `rating/dot_mm_rating_store.gd`, `_file.gd` | `GSMmRatingStore` (keyed by player and playlist, synchronous), `GSMmRatingStoreFile` (temp file and rename) |
-| `queue/dot_mm_playlist.gd` | `GSMmPlaylist`: one queue's shape, party cap, widening tolerances, `validate` with the site's id rule |
-| `queue/dot_mm_ticket.gd` | `GSMmTicket`: a solo player or a party, the unit of placement |
-| `queue/dot_mm_balance.gd` | `GSMmBalance`: whole tickets into sides, deterministic |
-| `queue/dot_mm_queue.gd`, `dot_mm_match.gd` | `GSMmQueue` (the pure `form(now)`), `GSMmMatch` (a found match with its explanation) |
-| `runtime/dot_matchmaker.gd` | `GSMatchmaker`: queues, passes, accept / decline / timeout, `allocator`, `report_result` |
-| `runtime/dot_mm_allocator_list.gd` | `GSMmAllocatorList`: a fixed server list, one match per server |
-| `net/dot_mm_backbone.gd` | `GSMmBackbone`: `define`, `submit`, `refresh`, `flush`, and the pre-send checks |
-| `dot_matchmaking_config.gd` | `GSMatchmakingConfig`: rating rules (`tau`, inactivity period, participation, leavers) |
+| `rating/gs_mm_rating.gd` | `GSMmRating`: rating, deviation, volatility, games, last played; `conservative()` is what a board shows |
+| `rating/gs_mm_glicko2.gd` | `GSMmGlicko2`: the update (the paper, step for step), `age()`, `expected()`, `rate_match()` for teams |
+| `rating/gs_mm_rating_store.gd`, `_file.gd` | `GSMmRatingStore` (keyed by player and playlist, synchronous), `GSMmRatingStoreFile` (temp file and rename) |
+| `queue/gs_mm_playlist.gd` | `GSMmPlaylist`: one queue's shape, party cap, widening tolerances, `validate` with the site's id rule |
+| `queue/gs_mm_ticket.gd` | `GSMmTicket`: a solo player or a party, the unit of placement |
+| `queue/gs_mm_balance.gd` | `GSMmBalance`: whole tickets into sides, deterministic |
+| `queue/gs_mm_queue.gd`, `gs_mm_match.gd` | `GSMmQueue` (the pure `form(now)`), `GSMmMatch` (a found match with its explanation) |
+| `runtime/gs_matchmaker.gd` | `GSMatchmaker`: queues, passes, accept / decline / timeout, `allocator`, `report_result` |
+| `runtime/gs_mm_allocator_list.gd` | `GSMmAllocatorList`: a fixed server list, one match per server |
+| `net/gs_mm_backbone.gd` | `GSMmBackbone`: `define`, `submit`, `refresh`, `flush`, and the pre-send checks |
+| `gs_matchmaking_config.gd` | `GSMatchmakingConfig`: rating rules (`tau`, inactivity period, participation, leavers) |
 | `examples/matchmaking_selftest.tscn` | the suite: no network, no wall clock |
-| `examples/cfg_selftest.tscn` | `matchmaking.yml` through `GSMatchmakingConfig.load_cfg`: `cfg/addons/dot_matchmaking/`, `cfg/server/addons/dot_matchmaking/` over it, the flat `cfg/matchmaking.yml` shim (WARN once, removed 2026-12-31) |
+| `examples/cfg_selftest.tscn` | `matchmaking.yml` through `GSMatchmakingConfig.load_cfg`: `cfg/addons/gs_matchmaking/`, `cfg/server/addons/gs_matchmaking/` over it, the flat `cfg/matchmaking.yml` shim (WARN once, removed 2026-12-31) |
 
-Paths except `examples/` are in `addons/dot_matchmaking/`.
+Paths except `examples/` are in `addons/gs_matchmaking/`.
 
 ## Running and testing
 

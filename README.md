@@ -6,7 +6,7 @@ Skill-based matchmaking for a Godot 4 game. Players and parties queue, the queue
 
 ## Install
 
-Copy `addons/dot_matchmaking/` and dot-core's `addons/dot_core/` into your project and enable dot-matchmaking under **Project > Project Settings > Plugins**. dot-party is not needed (a party is a ticket with several ids on it), and dot-auth's client is used when present.
+Copy `addons/gs_matchmaking/` and gs-core's `addons/gs_core/` into your project and enable gs-matchmaking under **Project > Project Settings > Plugins**. gs-party is not needed (a party is a ticket with several ids on it), and gs-auth's client is used when present.
 
 ## Ratings: Glicko-2, one per queue
 
@@ -72,7 +72,7 @@ A found match waits for everyone to accept. Someone who declines or does not ans
 
 ### Machinery (`GSMatchmakingConfig`)
 
-Layered like every GameSpice config: defaults, JSON or `matchmaking.yml`, `DOT_MM_*` environment, `--mm-*` command line.
+Layered like every GameSpice config: defaults, JSON or `matchmaking.yml`, `GS_MM_*` environment, `--mm-*` command line.
 
 | Setting | Default | What it does |
 | --- | --- | --- |

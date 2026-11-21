@@ -6,13 +6,13 @@ extends EditorPlugin
 ## No autoloads: a lobby server and a suite both run two matchmakers in one process, and a
 ## global would make them one.
 
-const _ICON := "res://addons/dot_matchmaking/icon_placeholder.svg"
+const _ICON := "res://addons/gs_matchmaking/icon_placeholder.svg"
 
 const _TYPES := [
 	[
 		"GSMatchmaker",
 		"Node",
-		"res://addons/dot_matchmaking/runtime/dot_matchmaker.gd",
+		"res://addons/gs_matchmaking/runtime/gs_matchmaker.gd",
 	],
 ]
 

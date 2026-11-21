@@ -54,18 +54,18 @@ extends GSConfig
 
 
 func env_prefix() -> String:
-	return "DOT_MM_"
+	return "GS_MM_"
 
 
 func cli_prefix() -> String:
 	return "--mm-"
 
 
-## The addon name [GSAddonConfig] turns into the folder `dot_matchmaking`.
-const CFG_ADDON := "dot-matchmaking"
+## The addon name [GSAddonConfig] turns into the folder `gs_matchmaking`.
+const CFG_ADDON := "gs-matchmaking"
 
 
-## Applies [param file_name] from `cfg/addons/dot_matchmaking/`, then the operator's `cfg/server/addons/dot_matchmaking/`.
+## Applies [param file_name] from `cfg/addons/gs_matchmaking/`, then the operator's `cfg/server/addons/gs_matchmaking/`.
 ## A flat [param legacy_dir]/[param file_name] is still read (one WARN) while no new copy exists.
 ## Keys not starting `mm_` belong to the deployment and are skipped; secrets stay file-only.
 func apply_cfg_file(file_name: String = "matchmaking.yml", legacy_dir: String = "res://cfg") -> GSResult:

@@ -4,7 +4,7 @@ The rating routes on website-city that `GSMmBackbone` speaks, the rules both sid
 
 Before these routes, website-city had no skill rating of any kind: no ELO, MMR, Glicko or TrueSkill in `src`, `prisma` or `docs` (`prisma/models/rating.prisma` is thumbs up and down on content). What the site calls "matchmaking" is `PartySearch`, which finds a **server** for a party by loosening the party's criteria one step per pass. There is still no player queue on the site.
 
-These routes were added to website-city for dot-matchmaking and are on its main branch (`src/app/api/integration/v1/rating/`), shaped deliberately like the `stats/*` routes dot-stats already speaks. The site's Glicko-2 is a separate implementation and is tested against the same figures as this addon's; driven from Godot against a live dev server, the rating the site answered for a first win was 1662.3109, the same as `GSMmGlicko2.rate_match` computes locally.
+These routes were added to website-city for gs-matchmaking and are on its main branch (`src/app/api/integration/v1/rating/`), shaped deliberately like the `stats/*` routes gs-stats already speaks. The site's Glicko-2 is a separate implementation and is tested against the same figures as this addon's; driven from Godot against a live dev server, the rating the site answered for a first win was 1662.3109, the same as `GSMmGlicko2.rate_match` computes locally.
 
 One thing the site does that a client must allow for: its integration handler coerces every all-digit query value to a number. `rating/players` accepts that for its string fields; a GET should still carry its nonce in the `x-tmc-nonce` header, as `GSBackboneClient.get_integration` does.
 

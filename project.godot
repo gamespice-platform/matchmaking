@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="dot-matchmaking"
+config/name="gs-matchmaking"
 config/description="Who plays whom: Glicko-2 ratings per queue, windows that widen with waiting, parties placed whole, balanced sides, an accept step, and a server to play on."
 run/main_scene="res://examples/matchmaking_selftest.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
@@ -23,7 +23,7 @@ window/size/viewport_height=900
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/dot_matchmaking/plugin.cfg")
+enabled=PackedStringArray("res://addons/gs_matchmaking/plugin.cfg")
 
 [importer_defaults]
 

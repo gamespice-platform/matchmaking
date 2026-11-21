@@ -22,7 +22,7 @@ extends Node
 ## No autoload. Registers itself under [constant SERVICE], scoped if two run in one process.
 
 const CHANNEL := "matchmaking"
-const SERVICE := &"dot_matchmaker"
+const SERVICE := &"gs_matchmaker"
 
 ## A ticket entered a queue.
 signal queued(ticket: GSMmTicket)

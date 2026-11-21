@@ -239,7 +239,7 @@ static func submit_problem(playlist_id: String, match_id: String, sides: Array, 
 		for pid_v in side_v:
 			var pid := str(pid_v)
 			if pid.begins_with(ACCOUNT_PREFIX):
-				return "an account id is not a player key; use the scoped key (see dot-stats' reporter for why)"
+				return "an account id is not a player key; use the scoped key (see gs-stats' reporter for why)"
 			if pid.is_empty() or pid.length() > KEY_MAX or not _is_key(pid):
 				return "player %s: a key is 1 to %d letters, digits, dot, underscore, colon or hyphen" % [pid, KEY_MAX]
 			if seen.has(pid):
