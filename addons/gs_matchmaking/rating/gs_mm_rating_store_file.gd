@@ -9,6 +9,8 @@ extends GSMmRatingStore
 ## truncated file is every player on the server starting from 1500 again.
 
 const CHANNEL := "matchmaking.store"
+## gs-core's level whose GSPaths.write_bytes writes through a per-writer temporary.
+const ATOMIC_CORE_LEVEL := 49
 
 var path: String = "user://matchmaking/ratings.json"
 
@@ -50,7 +52,23 @@ func save() -> GSResult:
 	return res
 
 
+## Whether this build's GSPaths.write_bytes gives every writer its own temporary (gs-core API 49).
+## Two writers of one ratings file (two servers on one host, a worker thread) shared a fixed
+## [code]<path>.tmp[/code]: the second truncated it under the first's rename, and a reader got half a file.
+static func core_writes_atomically() -> bool:
+	return GSAddonApi.build_level("gs_core") >= ATOMIC_CORE_LEVEL
+
+
 func _write() -> GSResult:
+	var text := JSON.stringify(to_dict(), "\t", true)
+	if core_writes_atomically():
+		var written := GSPaths.write_text(path, text)
+		return GSResult.success(null) if written.ok else written
+	return _write_shared_tmp(text)
+
+
+## The write before gs-core API 49: a fixed temporary, so two writers at once can tear it.
+func _write_shared_tmp(text: String) -> GSResult:
 	var dir := path.get_base_dir()
 	if not DirAccess.dir_exists_absolute(dir):
 		var made := DirAccess.make_dir_recursive_absolute(dir)
@@ -61,7 +79,7 @@ func _write() -> GSResult:
 	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
 		return GSResult.failure(GSError.from_engine(FileAccess.get_open_error(), tmp))
-	f.store_string(JSON.stringify(to_dict(), "\t", true))
+	f.store_string(text)
 	f.close()
 
 	var moved := DirAccess.rename_absolute(tmp, path)

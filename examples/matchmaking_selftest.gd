@@ -15,8 +15,9 @@ extends Node
 ## godot --headless --path . res://examples/matchmaking_selftest.tscn
 ## [/codeblock]
 
-const SECTIONS := 9
-const CHECKS := 142
+const SECTIONS := 10
+const CHECKS := 148
+const AtomicChecks := preload("res://examples/matchmaking_atomic_checks.gd")
 
 var _passed := 0
 var _failed := 0
@@ -42,6 +43,7 @@ func _run() -> void:
 	_test_nobody_starves()
 	await _test_accept_step()
 	_test_results()
+	AtomicChecks.run(self)
 	await _test_backbone()
 	await _test_site_rules()
 
