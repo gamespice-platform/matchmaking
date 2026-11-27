@@ -2,7 +2,7 @@
 
 Skill-based matchmaking for a Godot 4 game. Players and parties queue, the queue finds a fair match in a region everyone can reach, everyone accepts, a server is found, and the result moves everybody's rating. It needs only [GameSpice Core](https://github.com/gamespice-platform/core). Part of TMC's open source [**GameSpice**](https://gamespice.net) collection (MIT licence).
 
-> Built with Claude Code. Every addon has a headless test suite and the suites pass, but little of this has met real players yet. Please report rough edges.
+> A [GameSpice](https://gamespice.net) addon, MIT licensed and built with Claude Code. The headless suites are `examples/matchmaking_selftest.tscn` and `examples/cfg_selftest.tscn`. The games in [Zee's Games](https://zeesgames.com) are built on the GameSpice addons and run on live servers; none of them queues through this addon yet.
 
 ## Install
 
@@ -91,6 +91,12 @@ On TMC the website computes ratings, not the game server, because ratings decide
 ## More
 
 [docs/design.md](docs/design.md) explains the choices.
+
+## Used by
+
+No shipped game uses it yet; the example scene shows it.
+
+The whole collection is at [zeesgames.com](https://zeesgames.com).
 
 ## Licence
 
